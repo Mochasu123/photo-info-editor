@@ -1,0 +1,265 @@
+<Window x:Class="PhotoLocationEditor.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Photo Location Editor"
+        Width="1220"
+        Height="760"
+        MinWidth="1080"
+        MinHeight="640"
+        Background="#F5F7FA"
+        AllowDrop="True"
+        DragOver="Window_DragOver"
+        Drop="Window_Drop">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PanelBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#1F2937"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#6B7280"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#2563EB"/>
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,14">
+            <StackPanel DockPanel.Dock="Left">
+                <TextBlock x:Name="AppTitleText" Text="Photo Location Editor" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                <TextBlock x:Name="AppSubtitleText"
+                           Text="Batch-write standard EXIF GPS data. Existing GPS coordinates are shown and can be opened on a map."
+                           Margin="0,4,0,0"
+                           Foreground="{StaticResource MutedBrush}"/>
+                <TextBlock x:Name="DropHintText"
+                           Margin="0,4,0,0"
+                           Foreground="{StaticResource MutedBrush}"
+                           Text="Drop photos or folders here"/>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                <ComboBox x:Name="LanguageComboBox" Width="112" Margin="0,0,10,0" SelectionChanged="LanguageComboBox_SelectionChanged">
+                    <ComboBoxItem x:Name="ChineseLanguageItem" Tag="zh" Content="Chinese"/>
+                    <ComboBoxItem Tag="en" Content="English"/>
+                </ComboBox>
+                <Border Background="#E0F2FE" CornerRadius="4" Padding="10,6">
+                    <TextBlock x:Name="ExifToolStatusText" Foreground="#075985"/>
+                </Border>
+            </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="720"/>
+                <ColumnDefinition Width="360"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0" Margin="0,0,14,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Background="{StaticResource PanelBrush}" BorderBrush="#E5E7EB" BorderThickness="1" Padding="12" Margin="0,0,0,12">
+                    <DockPanel>
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <Button x:Name="AddPhotosButton" Content="Add Photos" Click="AddFiles_Click"/>
+                            <Button x:Name="AddFolderButton" Content="Add Folder" Click="AddFolder_Click"/>
+                            <CheckBox x:Name="IncludeSubfoldersCheckBox"
+                                      Content="Include subfolders"
+                                      VerticalAlignment="Center"
+                                      Margin="4,0,12,0"/>
+                            <UniformGrid Rows="2" Columns="1" Width="74" Height="34" Margin="0,0,8,0">
+                                <Button x:Name="SelectAllButton" Content="Select All" Click="SelectAll_Click" Height="17" Padding="4,0" Margin="0,0,0,1"/>
+                                <Button x:Name="SelectNoneButton" Content="Select None" Click="SelectNone_Click" Height="16" Padding="4,0" Margin="0"/>
+                            </UniformGrid>
+                            <Button x:Name="MarkHighlightedButton" Content="选中" Click="MarkHighlighted_Click"/>
+                            <Button x:Name="UnmarkHighlightedButton" Content="取消选中" Click="UnmarkHighlighted_Click"/>
+                            <Button x:Name="InvertSelectionButton" Content="反选" Click="InvertSelection_Click"/>
+                            <Button x:Name="RemoveSelectedButton" Content="Remove" Click="RemoveSelected_Click"/>
+                            <Button x:Name="ClearButton" Content="Clear" Click="Clear_Click"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <DataGrid Grid.Row="1"
+                          x:Name="PhotoGrid"
+                          ItemsSource="{Binding Photos}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="False"
+                          SelectionMode="Extended"
+                          SelectionChanged="PhotoGrid_SelectionChanged"
+                          GridLinesVisibility="Horizontal"
+                          HeadersVisibility="Column"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          Background="{StaticResource PanelBrush}"
+                          BorderBrush="#E5E7EB"
+                          RowHeaderWidth="0">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn x:Name="UseColumn" Header="Use" Width="64" MinWidth="64">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Click="UseCheckBox_Click"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn x:Name="FileColumn" Header="File" Binding="{Binding FileName}" IsReadOnly="True" Width="1.2*" MinWidth="150"/>
+                        <DataGridTextColumn x:Name="TakenColumn" Header="Taken" Binding="{Binding DateTaken}" IsReadOnly="True" Width="150" MinWidth="136"/>
+                        <DataGridTextColumn x:Name="DeviceColumn" Header="Device" Binding="{Binding CameraDisplay}" IsReadOnly="True" Width="180" MinWidth="150"/>
+                        <DataGridTextColumn x:Name="GpsColumn" Header="GPS" Binding="{Binding HasGps}" IsReadOnly="True" Width="58" MinWidth="58"/>
+                        <DataGridTextColumn x:Name="CoordinatesColumn" Header="Coordinates" Binding="{Binding GpsDisplay}" IsReadOnly="True" Width="190" MinWidth="170"/>
+                        <DataGridTemplateColumn x:Name="MapColumn" Header="Map" Width="72" MinWidth="72">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Map" Click="OpenPhotoMap_Click" Padding="8,0" Margin="0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn x:Name="StatusColumn" Header="Status" Binding="{Binding Status}" IsReadOnly="True" Width="110" MinWidth="96"/>
+                        <DataGridTextColumn x:Name="PathColumn" Header="Path" Binding="{Binding Path}" IsReadOnly="True" Width="1.4*" MinWidth="180"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <GroupBox x:Name="SelectedPhotoGroup" Header="Selected Photo">
+                        <StackPanel>
+                            <TextBlock x:Name="SelectedPhotoText" Text="No photo selected." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="SelectedGpsText" Margin="0,8,0,0" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button x:Name="OpenSelectedMapButton" Content="Open Map" Click="OpenSelectedMap_Click"/>
+                                <Button x:Name="UseSelectedGpsButton" Content="Use As Input" Click="UseSelectedGpsAsInput_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox x:Name="LocationSourceGroup" Header="Location Source">
+                        <StackPanel>
+                            <TextBlock x:Name="ManualInputTitleText" Text="Manual GPS Input" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                            <TextBlock x:Name="ManualInputHelpText"
+                                       Text="Supports decimal degrees, N/E prefixes or suffixes, DMS, and optional altitude like alt=2031.9."
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,8"/>
+                            <TextBox x:Name="GpsInputTextBox"
+                                     AcceptsReturn="True"
+                                     MinHeight="78"
+                                     TextWrapping="Wrap"
+                                     Foreground="#6B7280"
+                                     GotFocus="GpsInputTextBox_GotFocus"
+                                     LostFocus="GpsInputTextBox_LostFocus"
+                                     TextChanged="GpsInputTextBox_TextChanged"/>
+                            <DockPanel Margin="0,8,0,0">
+                                <Button x:Name="CoordinateSystemHelpButton"
+                                        DockPanel.Dock="Right"
+                                        Content="?"
+                                        Width="30"
+                                        Height="30"
+                                        Padding="0"
+                                        Margin="8,0,0,0"
+                                        Click="CoordinateSystemHelpButton_Click"/>
+                                <ComboBox x:Name="CoordinateSystemComboBox"
+                                          Height="30"
+                                          SelectedIndex="0"
+                                          SelectionChanged="CoordinateSystemComboBox_SelectionChanged">
+                                    <ComboBoxItem x:Name="Wgs84CoordinateItem" Tag="wgs84" Content="WGS-84"/>
+                                    <ComboBoxItem x:Name="Gcj02CoordinateItem" Tag="gcj02" Content="GCJ-02"/>
+                                    <ComboBoxItem x:Name="Bd09CoordinateItem" Tag="bd09" Content="BD-09"/>
+                                </ComboBox>
+                            </DockPanel>
+                            <TextBlock x:Name="GpsPreviewText"
+                                       Margin="0,8,0,0"
+                                       Foreground="#166534"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox x:Name="WriteModeGroup" Header="Write Mode">
+                        <StackPanel>
+                            <ComboBox x:Name="WriteModeComboBox" SelectedIndex="0" SelectionChanged="WriteModeComboBox_SelectionChanged">
+                                <ComboBoxItem x:Name="CopyModeItem" Content="Copy to output directory"/>
+                                <ComboBoxItem x:Name="BackupModeItem" Content="Write in place with backup"/>
+                                <ComboBoxItem x:Name="DirectModeItem" Content="Direct write in place"/>
+                            </ComboBox>
+                            <TextBlock x:Name="OutputDirectoryLabel" Text="Output directory" Margin="0,12,0,4" Foreground="{StaticResource MutedBrush}"/>
+                            <DockPanel>
+                                <Button x:Name="BrowseOutputButton" DockPanel.Dock="Right" Content="Browse" Click="ChooseOutputDirectory_Click" Margin="8,0,0,0"/>
+                                <TextBox x:Name="OutputDirectoryTextBox"/>
+                            </DockPanel>
+                            <TextBlock x:Name="WriteModeHintText"
+                                       Margin="0,8,0,0"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox x:Name="ReservedFeaturesGroup" Header="Reserved Features">
+                        <UniformGrid Columns="2">
+                            <Button x:Name="ReferencePhotoButton" Content="Reference Photo" Click="ReferencePhotoButton_Click" Margin="0,0,8,8"/>
+                            <Button x:Name="MapPickerButton" Content="Map Picker" Click="MapPickerButton_Click" Margin="0,0,0,8"/>
+                            <Button x:Name="TimeRulesButton" Content="Time Rules" Click="TimeRulesButton_Click" Margin="0,0,8,0"/>
+                            <Button x:Name="TrackMatchButton" Content="Track Match" Click="TrackMatchButton_Click" Margin="0"/>
+                        </UniformGrid>
+                    </GroupBox>
+
+                    <Button x:Name="WriteButton"
+                            Content="Write GPS To Selected Photos"
+                            Style="{StaticResource PrimaryButton}"
+                            Height="42"
+                            Click="WriteButton_Click"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <StatusBar Grid.Row="2" Margin="0,12,0,0">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" Text="Ready"/>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <ProgressBar x:Name="WriteProgressBar"
+                             Width="220"
+                             Height="12"
+                             Visibility="Collapsed"
+                             IsIndeterminate="True"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
