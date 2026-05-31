@@ -11,7 +11,11 @@ public enum ImageFormat
     Bmp,
     Tiff,
     Heic,
-    WebP
+    WebP,
+    Mp4,
+    Mov,
+    Avi,
+    Mkv
 }
 
 public static class FormatDetector
@@ -55,15 +59,34 @@ public static class FormatDetector
             header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50)
             return ImageFormat.WebP;
 
-        // HEIC/HEIF: check ftyp box at offset 4-11
+        // ftyp box: HEIC/HEIF/MP4/MOV/M4V/3GP
         if (read >= 12 &&
             header[4] == 0x66 && header[5] == 0x74 && header[6] == 0x79 && header[7] == 0x70)
         {
-            // Check for heic/heif/heix/hevc/mif1
             var ftyp = System.Text.Encoding.ASCII.GetString(header, 8, 4).ToLowerInvariant();
             if (ftyp is "heic" or "heif" or "heix" or "hevc" or "mif1")
                 return ImageFormat.Heic;
+            if (ftyp is "mp41" or "mp42" or "isom" or "avc1" or "m4v " or "3gp4" or "3gp5" or "mmp4" or "msnv")
+                return ImageFormat.Mp4;
+            if (ftyp is "qt  " or "mqv ")
+                return ImageFormat.Mov;
+            if (ftyp is "3gp6" or "3gp5" or "3gp4" || ftyp.StartsWith("3g"))
+                return ImageFormat.Mp4;
         }
+
+        // AVI: RIFF....AVI
+        if (read >= 12 &&
+            header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46 &&
+            header[8] == 0x41 && header[9] == 0x56 && header[10] == 0x49 && header[11] == 0x20)
+            return ImageFormat.Avi;
+
+        // MKV: EBML header 1A 45 DF A3
+        if (header[0] == 0x1A && header[1] == 0x45 && header[2] == 0xDF && header[3] == 0xA3)
+            return ImageFormat.Mkv;
+
+        // WMV/ASF: 30 26 B2 75
+        if (header[0] == 0x30 && header[1] == 0x26 && header[2] == 0xB2 && header[3] == 0x75)
+            return ImageFormat.Avi; // treat as AVI-like container
 
         return ImageFormat.Unknown;
     }
@@ -77,6 +100,10 @@ public static class FormatDetector
         ImageFormat.Tiff => ".tiff",
         ImageFormat.Heic => ".heic",
         ImageFormat.WebP => ".webp",
+        ImageFormat.Mp4 => ".mp4",
+        ImageFormat.Mov => ".mov",
+        ImageFormat.Avi => ".avi",
+        ImageFormat.Mkv => ".mkv",
         _ => string.Empty
     };
 
@@ -89,6 +116,10 @@ public static class FormatDetector
         ImageFormat.Tiff => "TIFF",
         ImageFormat.Heic => "HEIC",
         ImageFormat.WebP => "WebP",
+        ImageFormat.Mp4 => "MP4",
+        ImageFormat.Mov => "MOV",
+        ImageFormat.Avi => "AVI",
+        ImageFormat.Mkv => "MKV",
         _ => "?"
     };
 }
