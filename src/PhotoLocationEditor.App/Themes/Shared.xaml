@@ -243,7 +243,7 @@
 
     <Style TargetType="DataGridRow">
         <Setter Property="MinHeight" Value="30"/>
-        <Setter Property="Height" Value="30"/>
+        <Setter Property="Height" Value="Auto"/>
         <Setter Property="Background" Value="Transparent"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
@@ -259,9 +259,21 @@
 
     <Style TargetType="DataGridCell">
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
         <Setter Property="Padding" Value="8,2"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ContentPresenter VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
         <Style.Triggers>
             <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Background" Value="Transparent"/>

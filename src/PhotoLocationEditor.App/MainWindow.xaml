@@ -106,6 +106,12 @@
                           ColumnReordered="PhotoGrid_ColumnReordered" SelectionChanged="PhotoGrid_SelectionChanged"
                           MouseDoubleClick="PhotoGrid_MouseDoubleClick" PreviewKeyDown="PhotoGrid_PreviewKeyDown"
                           ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Resources>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap"/>
+                            <Setter Property="Padding" Value="6,2"/>
+                        </Style>
+                    </DataGrid.Resources>
                     <DataGrid.Columns>
                         <DataGridTemplateColumn x:Name="UseColumn" Header="使用" Width="52" MinWidth="52">
                             <DataGridTemplateColumn.CellTemplate>
@@ -132,14 +138,11 @@
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="格式" Binding="{Binding FormatDisplay}" IsReadOnly="True" Width="Auto" MinWidth="50"/>
                         <DataGridTextColumn Header="⚠" Binding="{Binding MismatchDisplay}" IsReadOnly="True" Width="30" MinWidth="30"/>
-                        <DataGridTextColumn x:Name="PathColumn" Header="路径" IsReadOnly="True" Width="*" MinWidth="140" MaxWidth="400">
+                        <DataGridTextColumn x:Name="PathColumn" Header="路径" IsReadOnly="True" Width="*" MinWidth="140">
                             <DataGridTextColumn.Binding><Binding Path="Path"/></DataGridTextColumn.Binding>
                             <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                                     <Setter Property="ToolTip" Value="{Binding Path}"/>
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
-                                    <Setter Property="Padding" Value="6,0"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>

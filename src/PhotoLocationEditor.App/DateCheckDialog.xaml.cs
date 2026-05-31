@@ -49,7 +49,38 @@ public partial class DateCheckDialog : Window
             MaxHeight = 180,
             FontSize = 12
         };
-        lb.ItemsSource = items.Select(i => $"{i.Photo.FileName}\n  EXIF: {i.ExifDate ?? "(无)"}  文件: {i.FileDate}  创建: {i.FileCreation:yyyy-MM-dd HH:mm}  修改: {i.FileModification:yyyy-MM-dd HH:mm}");
+        var dt = new DataTemplate();
+        var factory = new FrameworkElementFactory(typeof(StackPanel));
+        factory.SetValue(StackPanel.MarginProperty, new Thickness(2, 4, 2, 4));
+
+        var row1 = new FrameworkElementFactory(typeof(DockPanel));
+        var fileTb = new FrameworkElementFactory(typeof(TextBlock));
+        fileTb.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("FileName"));
+        fileTb.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
+        fileTb.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
+        var sugTb = new FrameworkElementFactory(typeof(TextBlock));
+        sugTb.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("Suggested"));
+        sugTb.SetValue(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Red);
+        sugTb.SetValue(DockPanel.DockProperty, Dock.Right);
+        sugTb.SetValue(TextBlock.FontSizeProperty, 11.0);
+        row1.AppendChild(sugTb);
+        row1.AppendChild(fileTb);
+        factory.AppendChild(row1);
+
+        var line2 = new FrameworkElementFactory(typeof(TextBlock));
+        line2.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("Line2"));
+        line2.SetValue(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Gray);
+        line2.SetValue(TextBlock.FontSizeProperty, 11.0);
+        factory.AppendChild(line2);
+
+        dt.VisualTree = factory;
+        lb.ItemTemplate = dt;
+        lb.ItemsSource = items.Select(i => new
+        {
+            FileName = i.Photo.FileName,
+            Suggested = i.Category is "A" or "B" or "F" ? $"→ {i.FileDate}" : "",
+            Line2 = $"  EXIF: {i.ExifDate ?? "(无)"}  文件: {i.FileDate}  创建: {i.FileCreation:yyyy-MM-dd HH:mm}  修改: {i.FileModification:yyyy-MM-dd HH:mm}"
+        });
         exp.Content = lb;
         CategoryPanel.Children.Add(exp);
     }
