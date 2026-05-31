@@ -1,7 +1,7 @@
 #define MyAppName "Photo Info Editor"
 #define MyAppVersion "0.2.0"
 #define MyAppPublisher "Mochasu123"
-#define MyAppExeName "PhotoLocationEditor.App.exe"
+#define MyAppExeName "PhotoInfoEditor.App.exe"
 #define SourceDir "..\dist\publish"
 
 [Setup]
