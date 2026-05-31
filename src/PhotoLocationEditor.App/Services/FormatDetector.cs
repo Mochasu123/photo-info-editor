@@ -15,7 +15,8 @@ public enum ImageFormat
     Mp4,
     Mov,
     Avi,
-    Mkv
+    Mkv,
+    Mts
 }
 
 public static class FormatDetector
@@ -86,7 +87,11 @@ public static class FormatDetector
 
         // WMV/ASF: 30 26 B2 75
         if (header[0] == 0x30 && header[1] == 0x26 && header[2] == 0xB2 && header[3] == 0x75)
-            return ImageFormat.Avi; // treat as AVI-like container
+            return ImageFormat.Avi;
+
+        // MTS/M2TS: MPEG Transport Stream sync byte 0x47
+        if (header[0] == 0x47 && header[1] == 0x40)
+            return ImageFormat.Mts;
 
         return ImageFormat.Unknown;
     }
@@ -104,6 +109,7 @@ public static class FormatDetector
         ImageFormat.Mov => ".mov",
         ImageFormat.Avi => ".avi",
         ImageFormat.Mkv => ".mkv",
+        ImageFormat.Mts => ".mts",
         _ => string.Empty
     };
 
@@ -120,6 +126,7 @@ public static class FormatDetector
         ImageFormat.Mov => "MOV",
         ImageFormat.Avi => "AVI",
         ImageFormat.Mkv => "MKV",
+        ImageFormat.Mts => "MTS",
         _ => "?"
     };
 }

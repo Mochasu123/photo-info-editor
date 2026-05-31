@@ -32,7 +32,7 @@ public sealed class ExifToolService
     {
         var extension = Path.GetExtension(path).ToLowerInvariant();
         return extension is ".jpg" or ".jpeg" or ".heic" or ".heif" or ".hif" or ".png" or ".webp"
-            or ".mp4" or ".mov" or ".avi" or ".mkv" or ".3gp" or ".m4v" or ".wmv";
+            or ".mp4" or ".mov" or ".avi" or ".mkv" or ".3gp" or ".m4v" or ".wmv" or ".mts" or ".m2ts";
     }
 
     public async Task ReadMetadataAsync(IReadOnlyList<PhotoItem> photos, CancellationToken cancellationToken = default)
