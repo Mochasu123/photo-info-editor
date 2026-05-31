@@ -33,7 +33,7 @@
 
 ## 安装
 
-下载 `PhotoInfoEditor-0.2.0-win-x64.zip`，解压到任意目录，运行 `PhotoInfoEditor.App.exe`。
+下载 `PhotoInfoEditor-0.2.0-win-x64.zip`，解压到任意目录，运行 `PhotoInfoEditor.exe`。
 
 - Windows x64，无需安装 .NET 运行时
 
@@ -84,7 +84,7 @@ Photo metadata editing tool. Formerly Photo Location Editor.
 
 ## Installation
 
-Download `PhotoInfoEditor-0.2.0-win-x64.zip`, extract, run `PhotoInfoEditor.App.exe`.
+Download `PhotoInfoEditor-0.2.0-win-x64.zip`, extract, run `PhotoInfoEditor.exe`.
 
 - Windows x64, self-contained, no .NET runtime installation needed
 

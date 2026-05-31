@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>appicon.ico</ApplicationIcon>
-    <AssemblyName>PhotoInfoEditor.App</AssemblyName>
+    <AssemblyName>PhotoInfoEditor</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
