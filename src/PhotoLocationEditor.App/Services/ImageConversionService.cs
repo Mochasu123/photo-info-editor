@@ -61,7 +61,7 @@ public sealed class ImageConversionService
                 }
                 case WriteMode.InPlaceWithBackup:
                 {
-                    var backupDir = Path.Combine(photo.Directory, ".photo-location-backups",
+                    var backupDir = Path.Combine(photo.Directory, ".photo-info-backups",
                         DateTime.Now.ToString("yyyyMMdd-HHmmss"));
                     Directory.CreateDirectory(backupDir);
                     var backupPath = GetUniquePath(Path.Combine(backupDir, photo.FileName));

@@ -271,7 +271,7 @@ public sealed class ExifToolService
         for (var index = 0; index < selectedPhotos.Count; index++)
         {
             var photo = selectedPhotos[index];
-            var backupDirectory = Path.Combine(photo.Directory, ".photo-location-backups", timestamp);
+            var backupDirectory = Path.Combine(photo.Directory, ".photo-info-backups", timestamp);
             Directory.CreateDirectory(backupDirectory);
             var backupPath = GetUniquePath(Path.Combine(backupDirectory, photo.FileName));
             File.Copy(photo.Path, backupPath);
