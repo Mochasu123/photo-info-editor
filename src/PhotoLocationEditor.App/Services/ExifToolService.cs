@@ -40,7 +40,7 @@ public sealed class ExifToolService
 
         var arguments = new List<string> { "-j", "-a", "-G1", "-s", "-n", "-u" };
         var argFile = WriteArgsFile(photos.Select(p => p.Path));
-        arguments.Add($"-@{argFile}");
+        arguments.Add("-@"); arguments.Add(argFile);
 
         var result = await RunAsync(arguments, cancellationToken);
         try { File.Delete(argFile); } catch { }
@@ -92,7 +92,7 @@ public sealed class ExifToolService
         }
 
         var gpsArgFile = WriteArgsFile(targets.Select(t => t.Path));
-        arguments.Add($"-@{gpsArgFile}");
+        arguments.Add("-@"); arguments.Add(gpsArgFile);
         var result = await RunAsync(arguments, cancellationToken);
         try { File.Delete(gpsArgFile); } catch { }
         if (result.ExitCode != 0)
@@ -174,7 +174,7 @@ public sealed class ExifToolService
             };
 
             var fujiArgFile = WriteArgsFile(group.Select(t => t.Path));
-            arguments.Add($"-@{fujiArgFile}");
+            arguments.Add("-@"); arguments.Add(fujiArgFile);
 
             var result = await RunAsync(arguments, cancellationToken);
             try { File.Delete(fujiArgFile); } catch { }
@@ -333,7 +333,7 @@ public sealed class ExifToolService
             $"-ModifyDate={dateTimeOriginal}"
         };
         var dateArgFile = WriteArgsFile(selectedPhotos.Select(p => p.Path));
-        arguments.Add($"-@{dateArgFile}");
+        arguments.Add("-@"); arguments.Add(dateArgFile);
         var result = await RunAsync(arguments, cancellationToken);
         try { File.Delete(dateArgFile); } catch { }
         if (result.ExitCode != 0)

@@ -521,6 +521,8 @@ public partial class MainWindow : Window
     }
 
     // ---- Date Check ----
+    private static readonly DateTime MinValidDate = new(1970, 1, 1);
+
     private async void DateCheck_Click(object sender, RoutedEventArgs e)
     {
         var selected = Photos.Where(p => p.IsSelected).ToArray();
@@ -529,49 +531,88 @@ public partial class MainWindow : Window
         var items = new List<DateCheckItem>();
         foreach (var p in selected)
         {
-            DateTime? exifDt = null;
+            // A time: EXIF DateTimeOriginal
+            DateTime? a = null;
             if (p.DateTaken is not null && p.DateTaken.Length >= 19)
-                try { exifDt = DateTime.ParseExact(p.DateTaken[..19], "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture); } catch { }
+                try { a = DateTime.ParseExact(p.DateTaken[..19], "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture); } catch { }
 
-            var creation = p.FileCreationTime;
-            var mod = File.GetLastWriteTime(p.Path);
-            var fileB = creation < mod ? creation : mod;
+            var c = p.FileCreationTime;          // C
+            var m = File.GetLastWriteTime(p.Path); // M
+            var cValid = c >= MinValidDate;
+            var mValid = m >= MinValidDate;
 
-            var cat = "C"; // default: keep
-            var detail = "";
-            if (mod < creation) { cat = "D"; detail = "修改 < 创建"; }
-            if (exifDt is null)
+            // B time: earliest valid file time
+            DateTime? b = null;
+            if (cValid && mValid) b = c < m ? c : m;
+            else if (cValid) b = c;
+            else if (mValid) b = m;
+
+            var cat = "C";
+            var detail = new List<string>();
+
+            // Detect anomalies
+            if (!cValid && !mValid)
             {
-                cat = cat == "D" ? "D" : "A";
-                detail = string.IsNullOrEmpty(detail) ? "无EXIF" : detail + "｜无EXIF";
+                cat = "E"; detail.Add("无可用文件时间");
             }
-            else if (exifDt > fileB)
+            else if (!cValid && mValid)
             {
-                cat = cat == "D" ? "D" : "B";
-                detail = string.IsNullOrEmpty(detail) ? "EXIF晚于文件" : detail + "｜EXIF晚于文件";
+                detail.Add("创建时间为空");
+            }
+            else if (cValid && !mValid)
+            {
+                detail.Add("修改时间为空");
+            }
+            else if (m < c) // both valid but modification earlier
+            {
+                detail.Add("修改早于创建");
             }
 
-            if (cat == "C" && exifDt is not null) detail = "时间正常";
-            if (cat == "C" && exifDt is null) detail = "无EXIF无文件时间";
+            if (a is null)
+            {
+                if (b.HasValue)
+                {
+                    cat = cat == "E" ? "E" : "A";
+                    detail.Add("无EXIF");
+                }
+                else
+                {
+                    cat = "E";
+                    detail.Add("无EXIF");
+                }
+            }
+            else if (b.HasValue && a > b)
+            {
+                cat = cat == "E" ? "E" : "B";
+                detail.Add("EXIF晚于文件");
+            }
+            else if (a is not null && (!b.HasValue || a <= b))
+            {
+                cat = "C";
+                detail.Add("时间正常");
+            }
+
+            if (cat == "E") detail.Add("需手动处理");
 
             items.Add(new DateCheckItem
             {
                 Photo = p,
-                ExifDate = exifDt?.ToString("yyyy:MM:dd HH:mm"),
-                FileDate = fileB.ToString("yyyy:MM:dd HH:mm"),
-                FileCreation = creation,
-                FileModification = mod,
+                ExifDate = a?.ToString("yyyy:MM:dd HH:mm"),
+                FileDate = b?.ToString("yyyy:MM:dd HH:mm") ?? "?",
+                FileCreation = c,
+                FileModification = m,
                 Category = cat,
-                Detail = detail
+                Detail = string.Join("｜", detail)
             });
         }
 
         var dlg = new DateCheckDialog(items) { Owner = this };
         if (dlg.ShowDialog() != true) return;
 
+        // Items to fix: A (no EXIF, has file time) + B (EXIF > file time)
         var toFix = dlg.SelectedIds is null
-            ? items.Where(i => i.Category is "A" or "B" or "D").ToArray()
-            : items.Where(i => i.Category is "A" or "B" && dlg.SelectedIds!.Contains(i.Photo.FileName)).ToArray();
+            ? items.Where(i => i.Category is "A" or "B" && i.FileDate != "?").ToArray()
+            : items.Where(i => (i.Category is "A" or "B") && i.FileDate != "?" && dlg.SelectedIds!.Contains(i.Photo.FileName)).ToArray();
 
         if (toFix.Length == 0) { StatusText.Text = "无需修改。"; return; }
         var groups = toFix.GroupBy(i => i.FileDate);
