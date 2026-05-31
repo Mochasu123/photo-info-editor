@@ -1,32 +1,33 @@
 # Photo Info Editor
 
-照片元数据编辑工具。
+照片元数据编辑工具。原名 Photo Location Editor。
 
-## v0.2.0 更新 (2026-05-31)
+## 功能
 
-### 新增功能
-- **日期工具**：支持 DatePicker 选日期、自定义输入时间、以文件创建时间写入、以较早时间纠正
-- **参考照片弹窗**：Tab 拖拽重排，已导入照片/本地文件双来源
-- **图片格式检测**：magic bytes 12字节自动检测7种格式，异常后缀 ⚠ 警示 + 一键更正
-- **图片格式转换**：JPEG/PNG/GIF/BMP/TIFF 互转（GDI+），HEIC/WebP 转换（ExifTool），复用三种写入模式
-- **三套主题**：晨光 Light / 薄暮 Sepia / 暗夜 Dark，DynamicResource 实时切换
-- **大图预览**：点击缩略图弹窗，支持键盘翻页，同步表格高亮
-- **双语音界面**：中文/English 实时切换
-- **应用图标**：自定义 icon
+**GPS 位置**
+- 手动输入 + 地图选点（高德/OSM 可切换）+ 参考照片提取
+- 支持 WGS-84 / GCJ-02 / BD-09 坐标系转换
+- 多种格式输入（十进制度、度分秒、N/E 前后缀）
+- 批量写入三种模式：直接写入 / 原地备份 / 输出到新目录
 
-### 优化
-- 默认写入模式改为直接写入，大幅提速
-- ExifTool 调用合并 + 分组批量处理，避免逐张调用
-- UI 重构：Fluent 风格圆角卡片，四色功能模块分区，折叠面板
-- 表格列自由拖拽重排 + 双击自适应 + 键盘上下切换行
-- 筛选栏 + 搜索 + 统计栏
-- 偏好持久化：主题/语言/写入模式/输出目录/窗口位置/列顺序/Tab顺序
+**日期工具**
+- DatePicker 选日期 + ▲▼ 调时间（HH:MM）
+- 日期校对：智能比对 EXIF / 文件创建 / 文件修改时间，分类展示建议
+- 手动写入 + 参考照片提取日期
 
-### 修复
-- 首次启动目录框可见性
-- 深色主题按钮可读性
-- ComboBox 文字重叠
-- 鼠标点击行切换卡顿
+**格式工具**
+- 自动检测真实格式（magic bytes），异常后缀 ⚠ 警示 + 一键更正
+- 图片转换：JPEG/PNG/GIF/BMP/TIFF 互转（GDI+），HEIC/WebP（ExifTool）
+- 视频支持：MP4/MOV/AVI/MKV/MTS 等格式读取元数据
+
+**界面**
+- 三套主题：晨光 Light / 薄暮 Sepia / 暗夜 Dark
+- 四色功能模块卡片（蓝/橙/绿/紫）
+- 双语音：中文/English
+- 大图预览 + 键盘翻页
+- 表格列自由拖拽 + 双击自适应 + 键盘上下行切换
+- 筛选栏 + 搜索 + 统计
+- 偏好全持久化
 
 ---
 
@@ -34,42 +35,58 @@
 
 下载 `PhotoInfoEditor-0.2.0-win-x64.zip`，解压到任意目录，运行 `PhotoInfoEditor.App.exe`。
 
-- 内置 ExifTool，无需额外安装
-- Windows x64 self-contained，无需安装 .NET 运行时
+- Windows x64，无需安装 .NET 运行时
+
+---
 
 ## 高德地图配置
 
-打开 **Map 选点**，在侧边栏配置 JS Key 和 Security JS Code。不配置时默认使用 OpenStreetMap。
+打开 **Map 选点**，侧边栏配置 JS Key 和 Security JS Code。不配置时默认使用 OpenStreetMap。
+
+---
+
+## License
+
+MIT
 
 ---
 
 # English
 
-Photo metadata editing tool.
+Photo metadata editing tool. Formerly Photo Location Editor.
 
-## v0.2.0 Changes
+## Features
 
-### New Features
-- **Date Tools**: DatePicker, custom time input, set to file creation time, correct to earlier time
-- **Reference Photo Dialog**: Drag-reorder tabs, imported photos + local file dual sources
-- **Format Detection**: 12-byte magic header detects 7 formats, ⚠ mismatch warning + one-click fix
-- **Format Conversion**: JPEG/PNG/GIF/BMP/TIFF via GDI+, HEIC/WebP via ExifTool, 3 write modes
-- **3 Themes**: Light / Sepia / Dark, switchable at runtime
-- **Fullscreen Preview**: Click thumbnail to open, keyboard navigation, syncs table highlight
-- **Bilingual UI**: Chinese / English
-- **App Icon**: Custom icon
+**GPS Location**
+- Manual input + map picker (AMap/OSM switchable) + reference photo extraction
+- WGS-84 / GCJ-02 / BD-09 coordinate conversion
+- Multiple input formats (decimal, DMS, directional prefixes)
+- Batch write: Direct / Backup / Copy to output directory
 
-### Improvements
-- Default write mode: Direct In Place
-- Merged + grouped ExifTool calls for batch speed
-- Fluent-style rounded card UI with 4-color functional zones
-- Column drag-reorder + double-click auto-fit + keyboard row navigation
+**Date Tools**
+- DatePicker + ▲▼ time adjust (HH:MM)
+- Date check: intelligent comparison of EXIF / file creation / modification times
+- Manual write + reference photo date extraction
+
+**Format Tools**
+- Magic bytes detection with ⚠ mismatch warning + one-click fix
+- Image conversion: JPEG/PNG/GIF/BMP/TIFF via GDI+, HEIC/WebP via ExifTool
+- Video support: MP4/MOV/AVI/MKV/MTS metadata reading
+
+**UI**
+- 3 themes: Light / Sepia / Dark
+- 4-color card zones (Blue/Orange/Green/Purple)
+- Bilingual: Chinese / English
+- Full image preview + keyboard navigation
+- Column drag-reorder + double-click auto-fit + keyboard row nav
 - Filter bar + search + statistics
-- Preference persistence across sessions
+- Full preference persistence
 
 ## Installation
 
 Download `PhotoInfoEditor-0.2.0-win-x64.zip`, extract, run `PhotoInfoEditor.App.exe`.
+
+- Windows x64, self-contained, no .NET runtime installation needed
 
 ## License
 
