@@ -1,6 +1,6 @@
 # Photo Info Editor
 
-照片元数据编辑工具。原名 Photo Location Editor。
+照片元数据编辑工具。
 
 ## v0.2.0 更新 (2026-05-31)
 
@@ -45,7 +45,7 @@
 
 # English
 
-Photo metadata editing tool. Formerly Photo Location Editor.
+Photo metadata editing tool.
 
 ## v0.2.0 Changes
 
