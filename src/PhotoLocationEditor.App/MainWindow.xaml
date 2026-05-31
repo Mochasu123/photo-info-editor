@@ -286,7 +286,7 @@
         <Border Grid.Row="2" Margin="0,10,0,0" Background="Transparent">
             <DockPanel>
                 <TextBlock x:Name="StatusText" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
-                <ProgressBar x:Name="WriteProgressBar" DockPanel.Dock="Right" Width="180" Height="8" Visibility="Collapsed" IsIndeterminate="True" Maximum="100"/>
+                <ProgressBar x:Name="WriteProgressBar" DockPanel.Dock="Right" Width="180" Height="10" Visibility="Collapsed" IsIndeterminate="False" Maximum="100" Minimum="0" Foreground="#E54D42" Background="#F0F0F0"/>
             </DockPanel>
         </Border>
         <!-- Toast -->

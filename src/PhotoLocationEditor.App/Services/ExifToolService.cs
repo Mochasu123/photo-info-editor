@@ -343,6 +343,42 @@ public sealed class ExifToolService
             photo.DateTaken = dateTimeOriginal;
     }
 
+    public async Task<int> WriteDateBatchAsync(
+        IReadOnlyList<(PhotoItem Photo, string Date)> items,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken = default)
+    {
+        var total = items.Count;
+        var argsFile = Path.GetTempFileName();
+        var lines = new List<string> { "-overwrite_original", "-P" };
+        for (var i = 0; i < total; i++)
+        {
+            var (photo, dt) = items[i];
+            lines.Add($"-DateTimeOriginal={dt}");
+            lines.Add($"-CreateDate={dt}");
+            lines.Add($"-ModifyDate={dt}");
+            lines.Add(photo.Path);
+            lines.Add("-execute");
+        }
+        File.WriteAllLines(argsFile, lines, System.Text.Encoding.UTF8);
+
+        var arguments = new List<string> { "-@", argsFile };
+        var result = await RunAsync(arguments, cancellationToken);
+        try { File.Delete(argsFile); } catch { }
+
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
+
+        var count = 0;
+        foreach (var (photo, dt) in items)
+        {
+            photo.DateTaken = dt;
+            count++;
+            progress?.Report($"{count}/{total}");
+        }
+        return count;
+    }
+
     private static string WriteArgsFile(IEnumerable<string> paths)
     {
         var tmpFile = Path.GetTempFileName();

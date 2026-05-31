@@ -624,14 +624,23 @@ public partial class MainWindow : Window
             : items.Where(i => (i.Category is "A" or "B" or "F") && i.FileDate != "?" && dlg.SelectedIds!.Contains(i.Photo.FileName)).ToArray();
 
         if (toFix.Length == 0) { StatusText.Text = "无需修改。"; return; }
-        var groups = toFix.GroupBy(i => i.FileDate);
-        var count = 0;
-        foreach (var grp in groups)
+
+        ToggleBusy(true, $"日期校对中 0/{toFix.Length}...");
+        WriteProgressBar.IsIndeterminate = false;
+        var progress = new Progress<string>(msg =>
         {
-            var batch = grp.Select(i => i.Photo).ToArray();
-            try { await _exifToolService.WriteDateAsync(batch, $"{grp.Key}:00", default); count += batch.Length; } catch { }
+            WriteProgressBar.Value = double.TryParse(msg.Split('/')[0], out var n) ? n * 100.0 / toFix.Length : 0;
+            StatusText.Text = $"日期校对中 {msg}...";
+        });
+
+        var batchItems = toFix.Select(i => (i.Photo, Date: $"{i.FileDate}:00")).ToArray();
+        try
+        {
+            await _exifToolService.WriteDateBatchAsync(batchItems, progress);
+            StatusText.Text = $"日期校对完成，已写入 {toFix.Length} 张。"; UpdateStats();
         }
-        StatusText.Text = $"日期校对完成，已写入 {count}/{toFix.Length} 张。"; UpdateStats();
+        catch (Exception ex) { StatusText.Text = ex.Message; }
+        finally { ToggleBusy(false); }
     }
 
     // ---- Format Tools ----
