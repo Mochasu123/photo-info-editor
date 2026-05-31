@@ -188,8 +188,23 @@ public partial class MainWindow : Window
         using var dlg = new WinForms.FolderBrowserDialog { Description = T("FolderDialogTitle"), UseDescriptionForTitle = true };
         if (dlg.ShowDialog() != WinForms.DialogResult.OK) return;
         var option = IncludeSubfoldersCheckBox.IsChecked == true ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        var files = Directory.EnumerateFiles(dlg.SelectedPath, "*.*", option).Where(ExifToolService.IsSupportedImage).ToArray();
-        await AddPathsAsync(files);
+        var allFiles = Directory.EnumerateFiles(dlg.SelectedPath, "*", option).ToArray();
+        var supported = allFiles.Where(ExifToolService.IsSupportedImage).ToArray();
+        var unsupported = allFiles.Where(f => !ExifToolService.IsSupportedImage(f))
+            .GroupBy(f => Path.GetExtension(f).ToLowerInvariant())
+            .Select(g => $"{g.Key}:{g.Count()}").ToArray();
+        if (supported.Length > 0 && unsupported.Length > 0)
+            System.Windows.MessageBox.Show(this,
+                $"已导入 {supported.Length} 张照片，有 {allFiles.Length - supported.Length} 张格式不支持（{string.Join(", ", unsupported)}），已跳过。",
+                "导入报告", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (supported.Length > 0)
+            await AddPathsAsync(supported);
+        else if (unsupported.Length > 0)
+            System.Windows.MessageBox.Show(this,
+                $"文件夹中 {allFiles.Length} 张均不支持（{string.Join(", ", unsupported)}）。",
+                "导入报告", MessageBoxButton.OK, MessageBoxImage.Warning);
+        else
+            StatusText.Text = T("NoNewPhotos");
     }
 
     private async void Window_Drop(object sender, System.Windows.DragEventArgs e)
@@ -212,7 +227,7 @@ public partial class MainWindow : Window
             if (ExifToolService.IsSupportedImage(path) && File.Exists(path))
                 yield return path;
             else if (Directory.Exists(path))
-                foreach (var file in Directory.EnumerateFiles(path, "*.*", SearchOption.TopDirectoryOnly).Where(ExifToolService.IsSupportedImage))
+                foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.TopDirectoryOnly).Where(ExifToolService.IsSupportedImage))
                     yield return file;
         }
     }
@@ -452,6 +467,24 @@ public partial class MainWindow : Window
         else { DatePickerField.SelectedDate = DateTime.Now; TimeInputBox.Text = "00:00"; }
     }
 
+    // ---- Time up/down ----
+    private void TimeUpHour_Click(object sender, RoutedEventArgs e) => AdjustTime(60);
+    private void TimeDownHour_Click(object sender, RoutedEventArgs e) => AdjustTime(-60);
+    private void TimeUpMin_Click(object sender, RoutedEventArgs e) => AdjustTime(1);
+    private void TimeDownMin_Click(object sender, RoutedEventArgs e) => AdjustTime(-1);
+
+    private void AdjustTime(int minutes)
+    {
+        var t = TimeInputBox.Text.Trim();
+        if (!TimeSpan.TryParseExact(t, new[] { @"hh\:mm", @"h\:mm" }, CultureInfo.InvariantCulture, out var ts))
+            ts = TimeSpan.FromHours(0);
+        ts += TimeSpan.FromMinutes(minutes);
+        if (ts.TotalMinutes < 0) ts += TimeSpan.FromHours(24);
+        if (ts.TotalMinutes >= 1440) ts -= TimeSpan.FromHours(24);
+        TimeInputBox.Text = ts.ToString(@"hh\:mm");
+    }
+
+    // ---- Date reference ----
     private void DateRef_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new ReferencePhotoDialog(Photos, _exifToolService, _settings) { Owner = this };
@@ -475,6 +508,7 @@ public partial class MainWindow : Window
         return $"{date:yyyy:MM:dd} {time}:00";
     }
 
+    // ---- Write date manually ----
     private async void WriteDate_Click(object sender, RoutedEventArgs e)
     {
         var selected = Photos.Where(p => p.IsSelected).ToArray();
@@ -486,50 +520,68 @@ public partial class MainWindow : Window
         catch (Exception ex) { System.Windows.MessageBox.Show(this, ex.Message, "写入失败", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
-    private async void DateUseCreation_Click(object sender, RoutedEventArgs e)
+    // ---- Date Check ----
+    private async void DateCheck_Click(object sender, RoutedEventArgs e)
     {
         var selected = Photos.Where(p => p.IsSelected).ToArray();
         if (selected.Length == 0) { MessageBoxShow(T("NoPhotosSelectedMessage"), T("NoPhotosSelectedTitle"), MessageBoxImage.Information); return; }
-        var withTime = selected.Where(p => p.FileCreationTime != default).ToArray();
-        if (withTime.Length == 0) { StatusText.Text = "选中照片均无文件创建时间。"; return; }
-        if (System.Windows.MessageBox.Show(this, $"将以 {withTime.Length} 张照片的文件创建时间写入拍摄日期。\n\n确定？", "确认写入", MessageBoxButton.OKCancel, MessageBoxImage.None) != MessageBoxResult.OK) return;
-        var groups = withTime.GroupBy(p => p.FileCreationTime.ToString("yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture));
+
+        var items = new List<DateCheckItem>();
+        foreach (var p in selected)
+        {
+            DateTime? exifDt = null;
+            if (p.DateTaken is not null && p.DateTaken.Length >= 19)
+                try { exifDt = DateTime.ParseExact(p.DateTaken[..19], "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture); } catch { }
+
+            var creation = p.FileCreationTime;
+            var mod = File.GetLastWriteTime(p.Path);
+            var fileB = creation < mod ? creation : mod;
+
+            var cat = "C"; // default: keep
+            var detail = "";
+            if (mod < creation) { cat = "D"; detail = "修改 < 创建"; }
+            if (exifDt is null)
+            {
+                cat = cat == "D" ? "D" : "A";
+                detail = string.IsNullOrEmpty(detail) ? "无EXIF" : detail + "｜无EXIF";
+            }
+            else if (exifDt > fileB)
+            {
+                cat = cat == "D" ? "D" : "B";
+                detail = string.IsNullOrEmpty(detail) ? "EXIF晚于文件" : detail + "｜EXIF晚于文件";
+            }
+
+            if (cat == "C" && exifDt is not null) detail = "时间正常";
+            if (cat == "C" && exifDt is null) detail = "无EXIF无文件时间";
+
+            items.Add(new DateCheckItem
+            {
+                Photo = p,
+                ExifDate = exifDt?.ToString("yyyy:MM:dd HH:mm"),
+                FileDate = fileB.ToString("yyyy:MM:dd HH:mm"),
+                FileCreation = creation,
+                FileModification = mod,
+                Category = cat,
+                Detail = detail
+            });
+        }
+
+        var dlg = new DateCheckDialog(items) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
+
+        var toFix = dlg.SelectedIds is null
+            ? items.Where(i => i.Category is "A" or "B" or "D").ToArray()
+            : items.Where(i => i.Category is "A" or "B" && dlg.SelectedIds!.Contains(i.Photo.FileName)).ToArray();
+
+        if (toFix.Length == 0) { StatusText.Text = "无需修改。"; return; }
+        var groups = toFix.GroupBy(i => i.FileDate);
         var count = 0;
         foreach (var grp in groups)
         {
-            var batch = grp.ToArray();
-            try { await _exifToolService.WriteDateAsync(batch, grp.Key, default); count += batch.Length; } catch { }
+            var batch = grp.Select(i => i.Photo).ToArray();
+            try { await _exifToolService.WriteDateAsync(batch, $"{grp.Key}:00", default); count += batch.Length; } catch { }
         }
-        StatusText.Text = $"已以创建时间写入 {count}/{withTime.Length} 张。"; UpdateStats();
-    }
-
-    private async void DateUseEarlier_Click(object sender, RoutedEventArgs e)
-    {
-        var selected = Photos.Where(p => p.IsSelected).ToArray();
-        if (selected.Length == 0) { MessageBoxShow(T("NoPhotosSelectedMessage"), T("NoPhotosSelectedTitle"), MessageBoxImage.Information); return; }
-        var resolved = new Dictionary<string, List<PhotoItem>>();
-        foreach (var p in selected)
-        {
-            DateTime? exifDt = null; DateTime? fileDt = p.FileCreationTime != default ? p.FileCreationTime : null;
-            if (p.DateTaken is not null && p.DateTaken.Length >= 19)
-                try { exifDt = DateTime.ParseExact(p.DateTaken[..19], "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture); } catch { }
-            if (exifDt is null && fileDt is null) continue;
-            if (exifDt is not null && fileDt is not null && exifDt <= fileDt) continue;
-            var use = fileDt is not null && (exifDt is null || fileDt < exifDt) ? fileDt : exifDt;
-            if (use is null) continue;
-            var key = use.Value.ToString("yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture);
-            if (!resolved.ContainsKey(key)) resolved[key] = new();
-            resolved[key].Add(p);
-        }
-        if (resolved.Count == 0) { StatusText.Text = "所有照片拍摄时间已为较早值，无需修改。"; return; }
-        var total = resolved.Values.Sum(v => v.Count);
-        if (System.Windows.MessageBox.Show(this, $"将 {total} 张照片的较早时间写入拍摄日期。\n\n确定？", "确认写入", MessageBoxButton.OKCancel, MessageBoxImage.None) != MessageBoxResult.OK) return;
-        var count = 0;
-        foreach (var kv in resolved)
-        {
-            try { await _exifToolService.WriteDateAsync(kv.Value.ToArray(), kv.Key, default); count += kv.Value.Count; } catch { }
-        }
-        StatusText.Text = $"已以较早时间写入 {count}/{total} 张。"; UpdateStats();
+        StatusText.Text = $"日期校对完成，已写入 {count}/{toFix.Length} 张。"; UpdateStats();
     }
 
     // ---- Format Tools ----
@@ -639,8 +691,8 @@ public partial class MainWindow : Window
         ReferencePhotoButton.Content = T("ReferencePhoto"); MapPickerButton.Content = T("MapPicker"); TimeRulesButton.Content = T("TimeRules"); TrackMatchButton.Content = T("TrackMatch");
         WriteButton.Content = T("WriteButton"); WriteModeHintText.Text = GetWriteModeHint();
         FormatToolsGroup.Text = T("FormatTools"); FixExtensionsButton.Content = T("FixExtensions"); ConvertFormatTitle.Text = T("ConvertFormat"); ConvertFormatButton.Content = T("ConvertFormatBtn");
-        DateToolsGroup.Text = T("DateTools"); DateLabel.Text = T("DateLabel"); DateFixLabel.Text = T("DateFixLabel");
-        DateUseCreationBtn.Content = T("DateUseCreation"); DateUseEarlierBtn.Content = T("DateUseEarlier"); WriteDateButton.Content = T("WriteDateBtn");
+        DateToolsGroup.Text = T("DateTools"); DateLabel.Text = T("DateLabel");
+        WriteDateButton.Content = T("WriteDateBtn"); DateCheckButton.Content = T("DateCheckBtn");
         if (_isGpsPlaceholderVisible) ShowGpsPlaceholder();
         UpdateSelectedPhotoPanel(); UpdateStats(); GpsInputTextBox_TextChanged(this, null);
     }
@@ -696,7 +748,7 @@ public partial class MainWindow : Window
         "ConvertingPhotos" => "正在转换 {0} 张照片格式...", "ConvertDoneStatus" => "完成，已转换 {0} 张照片。",
         "ConvertDoneMessage" => "格式转换完成 ({0} 张)。", "ConvertFailedTitle" => "转换失败",
         "DateTools" => "日期工具", "DateLabel" => "拍摄日期", "DateFixLabel" => "纠正工具",
-        "DateUseCreation" => "以文件创建时间写入", "DateUseEarlier" => "以较早时间写入", "WriteDateBtn" => "写入日期",
+        "WriteDateBtn" => "写入日期", "DateCheckBtn" => "日期校对",
         "StatsTotal" => "共 {0} 张", "StatsHasGps" => "{0} 张有 GPS", "StatsSelected" => "选中 {0} 张",
         "NoPhotoSelected" => "未选择照片。", "UnknownDevice" => "未知设备", "UnknownDate" => "未知日期", "GpsMissing" => "GPS: 缺失",
         _ => key
@@ -752,7 +804,7 @@ public partial class MainWindow : Window
         "ConvertingPhotos" => "Converting {0} photos...", "ConvertDoneStatus" => "Done. Converted {0} photos.",
         "ConvertDoneMessage" => "Format conversion done ({0} photos).", "ConvertFailedTitle" => "Convert failed",
         "DateTools" => "Date Tools", "DateLabel" => "Capture Date", "DateFixLabel" => "Fix Tools",
-        "DateUseCreation" => "Set to File Creation Time", "DateUseEarlier" => "Set to Earlier Time", "WriteDateBtn" => "Write Date",
+        "WriteDateBtn" => "Write Date", "DateCheckBtn" => "Date Check",
         "StatsTotal" => "Total: {0}", "StatsHasGps" => "GPS: {0}", "StatsSelected" => "Selected: {0}",
         "NoPhotoSelected" => "No photo selected.", "UnknownDevice" => "Unknown device", "UnknownDate" => "Unknown date", "GpsMissing" => "GPS: missing",
         _ => key

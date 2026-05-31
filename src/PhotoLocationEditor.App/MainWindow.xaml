@@ -180,7 +180,7 @@
 
                     <!-- GPS Card -->
                     <Border Style="{StaticResource CardPanelGps}" Padding="0">
-                        <Expander x:Name="GpsExpander" IsExpanded="True" Padding="16,12">
+                        <Expander x:Name="GpsExpander" IsExpanded="False" Padding="16,12">
                             <Expander.Header><TextBlock x:Name="GpsExpanderHeader" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/></Expander.Header>
                             <StackPanel Margin="0,8,0,0">
                                 <TextBlock x:Name="ManualInputHelpText" FontSize="12" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,6"/>
@@ -254,16 +254,24 @@
                                     <DatePicker x:Name="DatePickerField" Height="30" FontSize="12"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,0,0,8">
-                                    <TextBlock Text="时间" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="TimeInputBox" Width="90" Height="30" FontSize="12" Text="00:00"/>
-                                    <TextBlock Text="(HH:MM)" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                    <StackPanel Orientation="Vertical" Margin="0,0,6,0">
+                                        <Button Content="▲" Width="30" Height="16" Padding="0" FontSize="9" Click="TimeUpHour_Click"/>
+                                        <Button Content="▼" Width="30" Height="16" Padding="0" FontSize="9" Margin="0,1,0,0" Click="TimeDownHour_Click"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" Margin="0,0,6,0">
+                                        <Button Content="▲" Width="30" Height="16" Padding="0" FontSize="9" Click="TimeUpMin_Click"/>
+                                        <Button Content="▼" Width="30" Height="16" Padding="0" FontSize="9" Margin="0,1,0,0" Click="TimeDownMin_Click"/>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="时间" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,2"/>
+                                        <TextBox x:Name="TimeInputBox" Width="52" Height="30" FontSize="13" Text="00:00"/>
+                                    </StackPanel>
                                 </DockPanel>
-                                <Button x:Name="WriteDateButton" Content="写入日期时间" Click="WriteDate_Click"
-                                        Style="{DynamicResource PrimaryButton}" Height="36" FontSize="13" Margin="0,0,0,8"/>
-                                <!-- Fix tools -->
-                                <TextBlock x:Name="DateFixLabel" Text="纠正工具" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
-                                <Button x:Name="DateUseCreationBtn" Content="以文件创建时间写入" Click="DateUseCreation_Click" Margin="0,0,0,4" Height="30" FontSize="12"/>
-                                <Button x:Name="DateUseEarlierBtn" Content="以较早时间写入" Click="DateUseEarlier_Click" Height="30" FontSize="12"/>
+                                <Button x:Name="WriteDateButton" Content="写入日期" Click="WriteDate_Click"
+                                        Height="30" FontSize="12" Margin="0,0,0,8"/>
+                                <Separator Height="1" Margin="0,2,0,8"/>
+                                <Button x:Name="DateCheckButton" Content="日期校对"
+                                        Style="{DynamicResource PrimaryButton}" Height="36" FontSize="13" Click="DateCheck_Click"/>
                             </StackPanel>
                         </Expander>
                     </Border>

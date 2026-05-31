@@ -36,23 +36,14 @@ public sealed class ExifToolService
 
     public async Task ReadMetadataAsync(IReadOnlyList<PhotoItem> photos, CancellationToken cancellationToken = default)
     {
-        if (photos.Count == 0)
-        {
-            return;
-        }
+        if (photos.Count == 0) return;
 
-        var arguments = new List<string>
-        {
-            "-j",
-            "-a",
-            "-G1",
-            "-s",
-            "-n",
-            "-u"
-        };
-        arguments.AddRange(photos.Select(photo => photo.Path));
+        var arguments = new List<string> { "-j", "-a", "-G1", "-s", "-n", "-u" };
+        var argFile = WriteArgsFile(photos.Select(p => p.Path));
+        arguments.Add($"-@{argFile}");
 
         var result = await RunAsync(arguments, cancellationToken);
+        try { File.Delete(argFile); } catch { }
         if (result.ExitCode != 0 && string.IsNullOrWhiteSpace(result.Output))
         {
             throw new InvalidOperationException(result.Error);
@@ -100,8 +91,10 @@ public sealed class ExifToolService
             arguments.Add(coordinate.Altitude.Value < 0 ? "-GPSAltitudeRef=1" : "-GPSAltitudeRef=0");
         }
 
-        arguments.AddRange(targets.Select(target => target.Path));
+        var gpsArgFile = WriteArgsFile(targets.Select(t => t.Path));
+        arguments.Add($"-@{gpsArgFile}");
         var result = await RunAsync(arguments, cancellationToken);
+        try { File.Delete(gpsArgFile); } catch { }
         if (result.ExitCode != 0)
         {
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
@@ -180,9 +173,11 @@ public sealed class ExifToolService
                 $"-Model={group.Key}"
             };
 
-            arguments.AddRange(group.Select(target => target.Path));
+            var fujiArgFile = WriteArgsFile(group.Select(t => t.Path));
+            arguments.Add($"-@{fujiArgFile}");
 
             var result = await RunAsync(arguments, cancellationToken);
+            try { File.Delete(fujiArgFile); } catch { }
             if (result.ExitCode != 0)
             {
                 throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
@@ -337,14 +332,22 @@ public sealed class ExifToolService
             $"-CreateDate={dateTimeOriginal}",
             $"-ModifyDate={dateTimeOriginal}"
         };
-        arguments.AddRange(selectedPhotos.Select(p => p.Path));
-
+        var dateArgFile = WriteArgsFile(selectedPhotos.Select(p => p.Path));
+        arguments.Add($"-@{dateArgFile}");
         var result = await RunAsync(arguments, cancellationToken);
+        try { File.Delete(dateArgFile); } catch { }
         if (result.ExitCode != 0)
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
 
         foreach (var photo in selectedPhotos)
             photo.DateTaken = dateTimeOriginal;
+    }
+
+    private static string WriteArgsFile(IEnumerable<string> paths)
+    {
+        var tmpFile = Path.GetTempFileName();
+        File.WriteAllLines(tmpFile, paths, System.Text.Encoding.UTF8);
+        return tmpFile;
     }
 
     private async Task<(int ExitCode, string Output, string Error)> RunAsync(
