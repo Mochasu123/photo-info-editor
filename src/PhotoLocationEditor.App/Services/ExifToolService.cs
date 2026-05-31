@@ -31,7 +31,8 @@ public sealed class ExifToolService
     public static bool IsSupportedImage(string path)
     {
         var extension = Path.GetExtension(path).ToLowerInvariant();
-        return extension is ".jpg" or ".jpeg" or ".heic" or ".heif" or ".hif" or ".png" or ".webp";
+        return extension is ".jpg" or ".jpeg" or ".heic" or ".heif" or ".hif" or ".png" or ".webp"
+            or ".mp4" or ".mov" or ".avi" or ".mkv" or ".3gp" or ".m4v" or ".wmv";
     }
 
     public async Task ReadMetadataAsync(IReadOnlyList<PhotoItem> photos, CancellationToken cancellationToken = default)
@@ -125,9 +126,9 @@ public sealed class ExifToolService
                           TryGetString(item, "QuickTime:CreateDate") ??
                           TryGetString(item, "XMP-exif:DateTimeOriginal") ??
                           TryGetString(item, "IFD0:ModifyDate");
-        photo.Latitude = TryGetDouble(item, "GPS:GPSLatitude");
-        photo.Longitude = TryGetDouble(item, "GPS:GPSLongitude");
-        photo.Altitude = TryGetDouble(item, "GPS:GPSAltitude");
+        photo.Latitude = TryGetDouble(item, "GPS:GPSLatitude") ?? TryGetDouble(item, "Composite:GPSLatitude");
+        photo.Longitude = TryGetDouble(item, "GPS:GPSLongitude") ?? TryGetDouble(item, "Composite:GPSLongitude");
+        photo.Altitude = TryGetDouble(item, "GPS:GPSAltitude") ?? TryGetDouble(item, "Composite:GPSAltitude");
         photo.Status = "Loaded";
         photo.RefreshComputed();
     }

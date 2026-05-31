@@ -179,7 +179,7 @@ public partial class MainWindow : Window
     // ---- Import ----
     private async void AddFiles_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Multiselect = true, Filter = "Image files|*.jpg;*.jpeg;*.heic;*.heif;*.hif;*.png;*.webp|All files|*.*" };
+        var dialog = new Microsoft.Win32.OpenFileDialog { Multiselect = true, Filter = "Image/Video files|*.jpg;*.jpeg;*.heic;*.heif;*.hif;*.png;*.webp|All files|*.*" };
         if (dialog.ShowDialog(this) == true) await AddPathsAsync(dialog.FileNames);
     }
 
