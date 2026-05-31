@@ -532,9 +532,13 @@ public partial class MainWindow : Window
         foreach (var p in selected)
         {
             // A time: EXIF DateTimeOriginal
-            DateTime? a = null;
+            DateTime? a = null; bool exifInvalid = false;
             if (p.DateTaken is not null && p.DateTaken.Length >= 19)
-                try { a = DateTime.ParseExact(p.DateTaken[..19], "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture); } catch { }
+            {
+                var raw = p.DateTaken[..19];
+                if (raw.All(c => c is '0' or ':' or ' ')) { exifInvalid = true; } // "0000:00:00 00:00:00" etc.
+                else try { a = DateTime.ParseExact(raw, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture); } catch { exifInvalid = true; }
+            }
 
             var c = p.FileCreationTime;          // C
             var m = File.GetLastWriteTime(p.Path); // M
@@ -568,7 +572,12 @@ public partial class MainWindow : Window
                 detail.Add("修改早于创建");
             }
 
-            if (a is null)
+            if (exifInvalid)
+            {
+                cat = b.HasValue ? "F" : "E";
+                detail.Add("EXIF异常值(全零)");
+            }
+            else if (a is null)
             {
                 if (b.HasValue)
                 {
@@ -609,10 +618,10 @@ public partial class MainWindow : Window
         var dlg = new DateCheckDialog(items) { Owner = this };
         if (dlg.ShowDialog() != true) return;
 
-        // Items to fix: A (no EXIF, has file time) + B (EXIF > file time)
+        // Items to fix: A (no EXIF) + B (EXIF > file) + F (EXIF invalid)
         var toFix = dlg.SelectedIds is null
-            ? items.Where(i => i.Category is "A" or "B" && i.FileDate != "?").ToArray()
-            : items.Where(i => (i.Category is "A" or "B") && i.FileDate != "?" && dlg.SelectedIds!.Contains(i.Photo.FileName)).ToArray();
+            ? items.Where(i => i.Category is "A" or "B" or "F" && i.FileDate != "?").ToArray()
+            : items.Where(i => (i.Category is "A" or "B" or "F") && i.FileDate != "?" && dlg.SelectedIds!.Contains(i.Photo.FileName)).ToArray();
 
         if (toFix.Length == 0) { StatusText.Text = "无需修改。"; return; }
         var groups = toFix.GroupBy(i => i.FileDate);

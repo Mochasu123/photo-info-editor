@@ -12,23 +12,21 @@ public partial class DateCheckDialog : Window
         _items = items;
         InitializeComponent();
 
-        var a = items.Where(i => i.Category == "A").ToArray();
-        var b = items.Where(i => i.Category == "B").ToArray();
-        var c = items.Where(i => i.Category == "C").ToArray();
-        var d = items.Where(i => i.Category == "D").ToArray();
-        var e = items.Where(i => i.Category == "E").ToArray();
+        var suggestFix = items.Where(i => i.Category is "A" or "B" or "F").ToArray();  // actionable
+        var ok = items.Where(i => i.Category == "C").ToArray();                          // fine
+        var noTime = items.Where(i => i.Category == "E").ToArray();                      // unfixable
 
-        SummaryText.Text = $"共分析 {items.Count} 张：无拍摄日期 {a.Length} | 建议覆盖 {b.Length} | 保持 {c.Length} | 时序异常 {d.Length} | 需手动 {e.Length}";
+        SummaryText.Text = $"共分析 {items.Count} 张：建议处理 {suggestFix.Length} 张 | 无需处理 {ok.Length} 张 | 无可用时间 {noTime.Length} 张";
 
-        if (a.Length > 0) AddCategory("A. 无拍摄日期 — 建议以文件时间写入", a, System.Windows.Media.Brushes.DarkOrange);
-        if (b.Length > 0) AddCategory("B. 拍摄日期晚于文件时间 — 建议覆盖", b, System.Windows.Media.Brushes.OrangeRed);
-        if (c.Length > 0) AddCategory("C. 保持不变", c, System.Windows.Media.Brushes.ForestGreen);
-        if (d.Length > 0) AddCategory("D. 修改时间早于创建时间", d, System.Windows.Media.Brushes.Gray);
-        if (e.Length > 0) AddCategory("E. 无可用时间 — 需手动写入", e, System.Windows.Media.Brushes.Purple);
+        if (suggestFix.Length > 0) AddCategory("建议处理 — 将写入校准后的时间", suggestFix, System.Windows.Media.Brushes.DarkOrange);
+        if (ok.Length > 0) AddCategory("无需处理 — 时间已正常", ok, System.Windows.Media.Brushes.ForestGreen);
+        if (noTime.Length > 0) AddCategory("无可用时间 — 文件时间缺失或全为零，需手动写入", noTime, System.Windows.Media.Brushes.Purple);
 
-        ExecuteABBtn.IsEnabled = a.Length + b.Length > 0;
+        ExecuteABBtn.IsEnabled = suggestFix.Length > 0;
+        ExecuteABBtn.Content = "处理建议项";
+        ExecuteAllBtn.Content = "全部处理";
         CancelBtn.Click += (_, _) => { DialogResult = false; Close(); };
-        ExecuteABBtn.Click += (_, _) => { SelectedIds = a.Concat(b).Select(i => i.Photo.FileName).ToHashSet(); DialogResult = true; Close(); };
+        ExecuteABBtn.Click += (_, _) => { SelectedIds = suggestFix.Select(i => i.Photo.FileName).ToHashSet(); DialogResult = true; Close(); };
         ExecuteAllBtn.Click += (_, _) => { SelectedIds = null; DialogResult = true; Close(); };
     }
 
