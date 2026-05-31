@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Warm paper tones inspired by Notion and Kindle -->
+    <SolidColorBrush x:Key="Surface" Color="#F8F4EB"/>
+    <SolidColorBrush x:Key="Background" Color="#F0EBE0"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="#3D3529"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#7A6E5E"/>
+    <SolidColorBrush x:Key="Border" Color="#DCD0BE"/>
+    <SolidColorBrush x:Key="Accent" Color="#C4843A"/>
+    <SolidColorBrush x:Key="AccentHover" Color="#A8732C"/>
+    <SolidColorBrush x:Key="Divider" Color="#E8DECE"/>
+    <SolidColorBrush x:Key="Success" Color="#6B8E23"/>
+    <SolidColorBrush x:Key="Warning" Color="#CC7A2E"/>
+
+    <SolidColorBrush x:Key="RowHover" Color="#EDE4D5"/>
+    <SolidColorBrush x:Key="RowSelected" Color="#C4843A"/>
+    <SolidColorBrush x:Key="RowSelectedText" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="RowAlt" Color="#F5F0E7"/>
+    <SolidColorBrush x:Key="ToastBg" Color="#3D3529"/>
+    <SolidColorBrush x:Key="ToastText" Color="#F8F4EB"/>
+
+    <!-- Status bar colors -->
+    <SolidColorBrush x:Key="StatusReady" Color="#C4843A"/>
+    <SolidColorBrush x:Key="StatusReadyBg" Color="#F0E8D8"/>
+
+    <!-- Button colors -->
+    <SolidColorBrush x:Key="ButtonBg" Color="#EDE4D5"/>
+    <SolidColorBrush x:Key="ButtonHover" Color="#E0D6C5"/>
+    <SolidColorBrush x:Key="ButtonText" Color="#3D3529"/>
+
+    <!-- Card accent stripes -->
+    <SolidColorBrush x:Key="CardAccent" Color="#5B7FA5"/>
+    <SolidColorBrush x:Key="CardAccentGps" Color="#D4902A"/>
+    <SolidColorBrush x:Key="CardAccentFormat" Color="#6B8E23"/>
+    <SolidColorBrush x:Key="CardAccentFormatHover" Color="#5A7A1E"/>
+    <SolidColorBrush x:Key="CardAccentDate" Color="#8E6B9E"/>
+</ResourceDictionary>

@@ -108,7 +108,7 @@ public sealed class ExifToolService
         }
 
         var fujifilmGroups = targets
-            .Where(target => IsFujifilm(target.Photo))
+            .Where(target => IsFujifilm(target.Photo) && NeedsMakeModelFix(target.Photo))
             .GroupBy(target => BuildFujifilmDisplayModel(target.Photo.CameraModel))
             .ToArray();
         if (fujifilmGroups.Length > 0)
@@ -190,7 +190,7 @@ public sealed class ExifToolService
         }
     }
 
-    private static bool IsFujifilm(PhotoItem photo)
+    internal static bool IsFujifilm(PhotoItem photo)
     {
         return ContainsFujifilm(photo.CameraMake) ||
                ContainsFujifilm(photo.CameraModel) ||
@@ -201,6 +201,13 @@ public sealed class ExifToolService
     {
         return value?.Contains("FUJIFILM", StringComparison.OrdinalIgnoreCase) == true ||
                value?.Contains("FUJI", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private static bool NeedsMakeModelFix(PhotoItem photo)
+    {
+        var make = photo.CameraMake ?? "";
+        var model = photo.CameraModel ?? "";
+        return !ContainsFujifilm(make) || !model.Contains("FUJIFILM", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string BuildFujifilmDisplayModel(string? model)
@@ -315,6 +322,29 @@ public sealed class ExifToolService
                 return candidate;
             }
         }
+    }
+
+    public async Task WriteDateAsync(
+        IReadOnlyList<PhotoItem> selectedPhotos,
+        string dateTimeOriginal,
+        CancellationToken cancellationToken = default)
+    {
+        var arguments = new List<string>
+        {
+            "-overwrite_original",
+            "-P",
+            $"-DateTimeOriginal={dateTimeOriginal}",
+            $"-CreateDate={dateTimeOriginal}",
+            $"-ModifyDate={dateTimeOriginal}"
+        };
+        arguments.AddRange(selectedPhotos.Select(p => p.Path));
+
+        var result = await RunAsync(arguments, cancellationToken);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
+
+        foreach (var photo in selectedPhotos)
+            photo.DateTaken = dateTimeOriginal;
     }
 
     private async Task<(int ExitCode, string Output, string Error)> RunAsync(

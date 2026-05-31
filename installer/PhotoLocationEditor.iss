@@ -1,8 +1,8 @@
-#define MyAppName "Photo Location Editor"
-#define MyAppVersion "0.1.0"
+#define MyAppName "Photo Info Editor"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Mochasu123"
 #define MyAppExeName "PhotoLocationEditor.App.exe"
-#define SourceDir "..\publish\win-x64"
+#define SourceDir "..\dist\publish"
 
 [Setup]
 AppId={{B45B3519-6E79-48D9-8B66-5CC3AB9DCFD7}
@@ -13,7 +13,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\dist
-OutputBaseFilename=PhotoLocationEditorSetup-{#MyAppVersion}-win-x64
+OutputBaseFilename=PhotoInfoEditorSetup-{#MyAppVersion}-win-x64
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -26,7 +26,7 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
+Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: checked
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

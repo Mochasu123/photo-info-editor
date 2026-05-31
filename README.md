@@ -1,93 +1,76 @@
-# Photo Location Editor
+# Photo Info Editor
 
-一款 Windows 照片 GPS 编辑工具，用于手动或批量写入、修正标准 EXIF GPS 位置信息。
+照片元数据编辑工具。原名 Photo Location Editor。
 
-## 项目缘起
+## v0.2.0 更新 (2026-05-31)
 
-这个工具来自一个真实的旅行照片管理需求：我出门时会同时使用手机和相机拍照，例如手机是华为 Mate 系列，相机是 Fujifilm X-M5。相机照片导入电脑、再传到手机后，照片本身通常没有 GPS 位置信息，手机图库就无法像手机拍摄的照片那样按地图位置统一查看和管理。
+### 新增功能
+- **日期工具**：支持 DatePicker 选日期、自定义输入时间、以文件创建时间写入、以较早时间纠正
+- **参考照片弹窗**：Tab 拖拽重排，已导入照片/本地文件双来源
+- **图片格式检测**：magic bytes 12字节自动检测7种格式，异常后缀 ⚠ 警示 + 一键更正
+- **图片格式转换**：JPEG/PNG/GIF/BMP/TIFF 互转（GDI+），HEIC/WebP 转换（ExifTool），复用三种写入模式
+- **三套主题**：晨光 Light / 薄暮 Sepia / 暗夜 Dark，DynamicResource 实时切换
+- **大图预览**：点击缩略图弹窗，支持键盘翻页，同步表格高亮
+- **双语音界面**：中文/English 实时切换
+- **应用图标**：自定义 icon
 
-因此，这个软件的目标是在照片传到手机前，先把可靠的标准 EXIF GPS 信息写入照片文件。这样无论后续传到华为手机、iPhone，还是其他图库应用，只要它们读取图片本身的 GPS metadata，就能正确显示地图位置。
+### 优化
+- 默认写入模式改为直接写入，大幅提速
+- ExifTool 调用合并 + 分组批量处理，避免逐张调用
+- UI 重构：Fluent 风格圆角卡片，四色功能模块分区，折叠面板
+- 表格列自由拖拽重排 + 双击自适应 + 键盘上下切换行
+- 筛选栏 + 搜索 + 统计栏
+- 偏好持久化：主题/语言/写入模式/输出目录/窗口位置/列顺序/Tab顺序
 
-## 功能
+### 修复
+- 首次启动目录框可见性
+- 深色主题按钮可读性
+- ComboBox 文字重叠
+- 鼠标点击行切换卡顿
 
-- 通过文件选择、文件夹选择、拖拽导入照片。
-- 读取已有 EXIF GPS、相机型号、拍摄时间。
-- 支持多种格式手动输入 GPS 坐标。
-- 在内置地图中选点或修改已有位置。
-- 支持批量写入 GPS metadata。
-- 写入方式：
-  - 输出到新目录。
-  - 原地写入并创建 Backup。
-  - 直接写入原文件。
-- 支持 WGS-84、GCJ-02、BD-09 坐标转换。
-- 未配置高德 Key 时，默认使用 OpenStreetMap 免费兜底。
-- 可在 Map Picker 中配置自己的高德 JS Key 和 Security JS Code。
+---
+
+## 安装
+
+下载 `PhotoInfoEditor-0.2.0-win-x64.zip`，解压到任意目录，运行 `PhotoLocationEditor.App.exe`。
+
+- 内置 ExifTool，无需额外安装
+- Windows x64 self-contained，无需安装 .NET 运行时
 
 ## 高德地图配置
 
-打开 **Map Picker**，在右侧栏展开 **高德配置 / AMap Key**。
-
-- 不配置高德 Key 时，软件使用 OpenStreetMap 作为免费备用地图。
-- 配置自己的高德 JS Key 和 Security JS Code 后，可以切换到高德地图，并使用高德 POI 搜索、地址解析和图层。
-- 配置会保存在本机：`%AppData%\PhotoLocationEditor\settings.json`。
-
-## 安装包
-
-Release 版本是 Windows x64 self-contained 安装包，包含运行所需的 .NET 组件和用于读写 metadata 的 ExifTool。
-
-## 第三方组件
-
-- ExifTool by Phil Harvey：用于读取和写入照片 metadata。
-- Microsoft WebView2：用于内置地图显示。
-- OpenStreetMap 和 AMap：根据用户配置作为地图服务来源。
-
-## License
-
-本项目使用 MIT License。
+打开 **Map 选点**，在侧边栏配置 JS Key 和 Security JS Code。不配置时默认使用 OpenStreetMap。
 
 ---
 
 # English
 
-A Windows photo GPS editor for manually adding or correcting standard EXIF GPS metadata.
+Photo metadata editing tool. Formerly Photo Location Editor.
 
-## Why this exists
+## v0.2.0 Changes
 
-This app was built for a real travel workflow: photos taken on a Fujifilm X-M5 are often imported to a phone for storage and browsing, but camera photos do not contain phone GPS metadata by default. Phone gallery apps can group and display map locations only when location data exists in the image itself. The tool therefore focuses on adding reliable EXIF GPS data before photos are transferred to phones, including Huawei and iPhone workflows.
+### New Features
+- **Date Tools**: DatePicker, custom time input, set to file creation time, correct to earlier time
+- **Reference Photo Dialog**: Drag-reorder tabs, imported photos + local file dual sources
+- **Format Detection**: 12-byte magic header detects 7 formats, ⚠ mismatch warning + one-click fix
+- **Format Conversion**: JPEG/PNG/GIF/BMP/TIFF via GDI+, HEIC/WebP via ExifTool, 3 write modes
+- **3 Themes**: Light / Sepia / Dark, switchable at runtime
+- **Fullscreen Preview**: Click thumbnail to open, keyboard navigation, syncs table highlight
+- **Bilingual UI**: Chinese / English
+- **App Icon**: Custom icon
 
-## Features
+### Improvements
+- Default write mode: Direct In Place
+- Merged + grouped ExifTool calls for batch speed
+- Fluent-style rounded card UI with 4-color functional zones
+- Column drag-reorder + double-click auto-fit + keyboard row navigation
+- Filter bar + search + statistics
+- Preference persistence across sessions
 
-- Import photos by file picker, folder picker, or drag and drop.
-- Read existing EXIF GPS, camera model, and shooting time.
-- Manually enter GPS in multiple formats.
-- Pick or edit locations on an embedded map.
-- Batch write GPS metadata.
-- Write modes:
-  - Copy to output directory.
-  - Write in place with Backup.
-  - Direct write in place.
-- Coordinate conversion for WGS-84, GCJ-02, and BD-09.
-- OpenStreetMap fallback when no AMap key is configured.
-- Optional AMap JS Key and Security JS Code configuration inside Map Picker.
+## Installation
 
-## AMap configuration
-
-Open Map Picker and expand **AMap Key** in the sidebar.
-
-- If no AMap key is configured, the app uses OpenStreetMap as a free fallback.
-- If you configure your own AMap JS Key and Security JS Code, AMap search and AMap layers become available.
-- Settings are saved locally under `%AppData%\PhotoLocationEditor\settings.json`.
-
-## Packaging
-
-Release builds are self-contained Windows x64 packages and include ExifTool for metadata writing.
-
-## Third-party components
-
-- ExifTool by Phil Harvey is used for metadata reading and writing.
-- Microsoft WebView2 is used for embedded map display.
-- OpenStreetMap and AMap are used as map providers depending on user configuration.
+Download `PhotoInfoEditor-0.2.0-win-x64.zip`, extract, run `PhotoLocationEditor.App.exe`.
 
 ## License
 
-This project is released under the MIT License.
+MIT

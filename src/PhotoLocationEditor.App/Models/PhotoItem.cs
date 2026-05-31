@@ -13,6 +13,7 @@ public sealed class PhotoItem : INotifyPropertyChanged
     private double? _latitude;
     private double? _longitude;
     private double? _altitude;
+    private Services.ImageFormat _detectedFormat = Services.ImageFormat.Unknown;
 
     public PhotoItem(string path)
     {
@@ -29,9 +30,19 @@ public sealed class PhotoItem : INotifyPropertyChanged
         set => SetField(ref _isSelected, value);
     }
 
-    public string Path { get; }
-    public string FileName { get; }
-    public string Directory { get; }
+    public string Path { get; private set; }
+    public string FileName { get; private set; }
+    public string Directory { get; private set; }
+
+    public void UpdatePath(string newPath)
+    {
+        Path = newPath;
+        FileName = System.IO.Path.GetFileName(newPath);
+        Directory = System.IO.Path.GetDirectoryName(newPath) ?? string.Empty;
+        OnPropertyChanged(nameof(Path));
+        OnPropertyChanged(nameof(FileName));
+        OnPropertyChanged(nameof(Directory));
+    }
 
     public string? CameraMake
     {
@@ -79,10 +90,36 @@ public sealed class PhotoItem : INotifyPropertyChanged
         }
     }
 
+    private string? _dateTakenDate;
+    private string? _dateTakenTime;
+
     public string? DateTaken
     {
         get => _dateTaken;
-        set => SetField(ref _dateTaken, value);
+        set
+        {
+            if (SetField(ref _dateTaken, value))
+            {
+                ParseDateTime(value);
+                OnPropertyChanged(nameof(DateTakenDate));
+                OnPropertyChanged(nameof(DateTakenTime));
+            }
+        }
+    }
+
+    public string? DateTakenDate => _dateTakenDate ?? (_dateTaken?.Length >= 10 ? _dateTaken[..10] : _dateTaken);
+    public string? DateTakenTime => _dateTakenTime ?? (_dateTaken?.Length >= 16 ? _dateTaken[11..16] : null);
+
+    private void ParseDateTime(string? value)
+    {
+        _dateTakenDate = null;
+        _dateTakenTime = null;
+        if (string.IsNullOrWhiteSpace(value)) return;
+        var parts = value.Trim().Split(' ');
+        if (parts.Length >= 1 && parts[0].Length >= 10)
+            _dateTakenDate = parts[0][..10];
+        if (parts.Length >= 2 && parts[1].Length >= 5)
+            _dateTakenTime = parts[1][..5];
     }
 
     public double? Latitude
@@ -134,6 +171,30 @@ public sealed class PhotoItem : INotifyPropertyChanged
     {
         get => _status;
         set => SetField(ref _status, value);
+    }
+
+    public Services.ImageFormat DetectedFormat => _detectedFormat;
+    public string FormatDisplay => Services.FormatDetector.GetFormatLabel(_detectedFormat);
+    public bool IsExtensionMismatched =>
+        _detectedFormat != Services.ImageFormat.Unknown &&
+        !Path.EndsWith(Services.FormatDetector.GetStandardExtension(_detectedFormat), StringComparison.OrdinalIgnoreCase);
+    public string MismatchDisplay => IsExtensionMismatched ? "⚠" : string.Empty;
+    public string WrongExtensionHint => IsExtensionMismatched
+        ? $"实际: {FormatDisplay}, 后缀: {System.IO.Path.GetExtension(Path)}"
+        : string.Empty;
+
+    public DateTime FileCreationTime { get; set; }
+    public string FileCreationTimeDisplay => FileCreationTime == default ? "?" : FileCreationTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+    public void SetDetectedFormat(Services.ImageFormat format)
+    {
+        if (SetField(ref _detectedFormat, format))
+        {
+            OnPropertyChanged(nameof(FormatDisplay));
+            OnPropertyChanged(nameof(IsExtensionMismatched));
+            OnPropertyChanged(nameof(MismatchDisplay));
+            OnPropertyChanged(nameof(WrongExtensionHint));
+        }
     }
 
     public void RefreshComputed()
