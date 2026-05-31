@@ -100,14 +100,14 @@ public partial class MapPickerWindow : Window
             if (root.TryGetProperty("name", out var name) && !string.IsNullOrWhiteSpace(name.GetString()))
             {
                 StatusText.Text = _provider == MapProvider.AMap
-                    ? $"Location picked: {name.GetString()} (高德地图 GCJ-02 -> EXIF WGS-84)"
-                    : $"Location picked: {name.GetString()}";
+                    ? $"Point picked: {name.GetString()} (高德地图 GCJ-02 -> EXIF WGS-84)"
+                    : $"Point picked: {name.GetString()}";
             }
             else
             {
                 StatusText.Text = _provider == MapProvider.AMap
-                    ? "Location picked. 高德地图 GCJ-02 was converted to EXIF WGS-84."
-                    : "Location picked.";
+                    ? "Point picked. 高德地图 GCJ-02 was converted to EXIF WGS-84."
+                    : "Point picked.";
             }
         }
         catch (Exception ex)

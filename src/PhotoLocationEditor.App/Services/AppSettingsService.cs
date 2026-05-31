@@ -10,11 +10,27 @@ public sealed class AppSettingsService
 
     public string SettingsPath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "PhotoInfoEditor",
+        "settings.json");
+
+    private static readonly string OldSettingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "PhotoLocationEditor",
         "settings.json");
 
     public AppSettings Load()
     {
+        // Migrate from old name
+        if (!File.Exists(SettingsPath) && File.Exists(OldSettingsPath))
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+                File.Copy(OldSettingsPath, SettingsPath);
+            }
+            catch { }
+        }
+
         if (!File.Exists(SettingsPath))
         {
             return new AppSettings();
