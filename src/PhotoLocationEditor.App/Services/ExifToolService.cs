@@ -13,19 +13,12 @@ public sealed class ExifToolService
 
     public ExifToolService(string exifToolPath)
     {
-        _exifToolPath = File.Exists(exifToolPath) ? exifToolPath : LegacyDefaultPath;
+        _exifToolPath = exifToolPath;
     }
 
     public static string DefaultPath => Path.Combine(
         AppContext.BaseDirectory,
         "Tools",
-        "exiftool.exe");
-
-    public static string LegacyDefaultPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "Desktop",
-        "\u4e00\u4e9b\u811a\u672c",
-        "photoexif",
         "exiftool.exe");
 
     public static bool IsSupportedImage(string path)
