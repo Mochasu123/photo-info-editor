@@ -340,11 +340,14 @@ public sealed class ExifToolService
     public async Task<int> WriteDateBatchAsync(
         IReadOnlyList<(PhotoItem Photo, string Date)> items,
         IProgress<string>? progress,
+        WriteMode writeMode,
         CancellationToken cancellationToken = default)
     {
         var total = items.Count;
         var argsFile = Path.GetTempFileName();
-        var lines = new List<string> { "-overwrite_original", "-P" };
+        var lines = new List<string> { "-P" };
+        if (writeMode != WriteMode.DirectInPlace)
+            lines.Insert(0, "-overwrite_original");
         for (var i = 0; i < total; i++)
         {
             var (photo, dt) = items[i];

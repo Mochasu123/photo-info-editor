@@ -636,7 +636,7 @@ public partial class MainWindow : Window
         var batchItems = toFix.Select(i => (i.Photo, Date: $"{i.FileDate}:00")).ToArray();
         try
         {
-            await _exifToolService.WriteDateBatchAsync(batchItems, progress);
+            await _exifToolService.WriteDateBatchAsync(batchItems, progress, GetWriteMode());
             StatusText.Text = $"日期校对完成，已写入 {toFix.Length} 张。"; UpdateStats();
         }
         catch (Exception ex) { StatusText.Text = ex.Message; }
