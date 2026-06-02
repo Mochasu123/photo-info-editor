@@ -462,6 +462,7 @@ public partial class MainWindow : Window
     private WriteMode GetWriteMode() => WriteModeComboBox.SelectedIndex switch { 1 => WriteMode.InPlaceWithBackup, 2 => WriteMode.DirectInPlace, _ => WriteMode.CopyToOutputDirectory };
     private WriteMode GetConvertWriteMode() => ConvertWriteModeComboBox.SelectedIndex switch { 1 => WriteMode.InPlaceWithBackup, 2 => WriteMode.DirectInPlace, _ => WriteMode.CopyToOutputDirectory };
     private string GetWriteModeHint() => GetWriteMode() switch { WriteMode.InPlaceWithBackup => T("BackupModeHint"), WriteMode.DirectInPlace => T("DirectModeHint"), _ => T("CopyModeHint") };
+    private string GetWriteModeDescription(WriteMode mode) => mode switch { WriteMode.InPlaceWithBackup => T("BackupConfirm"), WriteMode.DirectInPlace => T("DirectConfirm"), _ => string.Format(CultureInfo.CurrentCulture, T("CopyToConfirm"), OutputDirectoryTextBox.Text) };
 
     private void MessageBoxShow(string msg, string title, MessageBoxImage icon) => System.Windows.MessageBox.Show(this, msg, title, MessageBoxButton.OK, icon);
 
@@ -661,7 +662,7 @@ public partial class MainWindow : Window
         if (mode == WriteMode.CopyToOutputDirectory && string.IsNullOrWhiteSpace(OutputDirectoryTextBox.Text))
         { MessageBoxShow(T("MissingOutputMessage"), T("MissingOutputTitle"), MessageBoxImage.Warning); return; }
 
-        ToggleBusy(true, $"日期校对中 0/{toFix.Length}...");
+        ToggleBusy(true, $"日期校对中 0/{toFix.Length}... {GetWriteModeDescription(mode)}");
         WriteProgressBar.IsIndeterminate = false;
         var progress = new Progress<WriteProgress>(p =>
         {

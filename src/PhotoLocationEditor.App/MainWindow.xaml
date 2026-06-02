@@ -251,25 +251,43 @@
                                 <TextBlock x:Name="DateInfoExif" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,2"/>
                                 <TextBlock x:Name="DateInfoFile" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
                                 <!-- Date Picker -->
-                                <TextBlock x:Name="DateLabel" Text="拍摄日期" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
-                                <DockPanel Margin="0,0,0,4">
-                                    <Button x:Name="DateRefButton" Content="参考" DockPanel.Dock="Right" Height="30" Padding="8,0" Margin="6,0,0,0" FontSize="12" Click="DateRef_Click"/>
-                                    <DatePicker x:Name="DatePickerField" Height="30" FontSize="12"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,0,0,8">
-                                    <StackPanel Orientation="Vertical" Margin="0,0,6,0">
-                                        <Button Content="▲" Width="30" Height="16" Padding="0" FontSize="9" Click="TimeUpHour_Click"/>
-                                        <Button Content="▼" Width="30" Height="16" Padding="0" FontSize="9" Margin="0,1,0,0" Click="TimeDownHour_Click"/>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="78"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock x:Name="DateLabel" Text="拍摄日期" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                                        <DatePicker x:Name="DatePickerField" Height="32" FontSize="13"/>
                                     </StackPanel>
-                                    <StackPanel Orientation="Vertical" Margin="0,0,6,0">
-                                        <Button Content="▲" Width="30" Height="16" Padding="0" FontSize="9" Click="TimeUpMin_Click"/>
-                                        <Button Content="▼" Width="30" Height="16" Padding="0" FontSize="9" Margin="0,1,0,0" Click="TimeDownMin_Click"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="来源" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                                        <Button x:Name="DateRefButton" Content="参考" Height="32" Padding="8,0" FontSize="12" Click="DateRef_Click"/>
                                     </StackPanel>
-                                    <StackPanel>
-                                        <TextBlock Text="时间" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,2"/>
-                                        <TextBox x:Name="TimeInputBox" Width="52" Height="30" FontSize="13" Text="00:00"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="76"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="时间" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="TimeInputBox" Width="72" Height="32" FontSize="14" Text="00:00"
+                                                 HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
                                     </StackPanel>
-                                </DockPanel>
+                                    <Grid Grid.Column="1" VerticalAlignment="Bottom">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" Content="-H" Height="32" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeDownHour_Click"/>
+                                        <Button Grid.Column="1" Content="+H" Height="32" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeUpHour_Click"/>
+                                        <Button Grid.Column="2" Content="-M" Height="32" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeDownMin_Click"/>
+                                        <Button Grid.Column="3" Content="+M" Height="32" Padding="0" FontSize="12" Click="TimeUpMin_Click"/>
+                                    </Grid>
+                                </Grid>
                                 <Button x:Name="WriteDateButton" Content="写入日期" Click="WriteDate_Click"
                                         Height="30" FontSize="12" Margin="0,0,0,8"/>
                                 <Separator Height="1" Margin="0,2,0,8"/>

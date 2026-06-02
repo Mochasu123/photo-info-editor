@@ -496,10 +496,12 @@ public sealed class ExifToolService
         }
 
         var argsFile = Path.GetTempFileName();
-        var lines = new List<string> { "-overwrite_original", "-P" };
+        var lines = new List<string>();
         for (var i = 0; i < targets.Count; i++)
         {
             var dt = items[i].Date;
+            lines.Add("-overwrite_original");
+            lines.Add("-P");
             if (IsQuickTimeVideoMetadataWrite(targets[i].Path))
             {
                 AddQuickTimeDateArguments(lines, dt);
