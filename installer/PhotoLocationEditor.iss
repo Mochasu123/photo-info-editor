@@ -1,5 +1,5 @@
 #define MyAppName "Photo Info Editor"
-#define MyAppVersion "0.2.0"
+#define MyAppVersion "0.2.1"
 #define MyAppPublisher "Mochasu123"
 #define MyAppExeName "PhotoInfoEditor.exe"
 #define SourceDir "..\dist\publish"
@@ -9,7 +9,7 @@ AppId={{B45B3519-6E79-48D9-8B66-5CC3AB9DCFD7}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={autopf}\PhotoInfoEditor
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\dist

@@ -164,7 +164,7 @@ public partial class ReferencePhotoDialog : Window
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Multiselect = false,
-            Filter = "Image/Video files|*.jpg;*.jpeg;*.heic;*.heif;*.hif;*.png;*.webp|All files|*.*"
+            Filter = "Image/Video files|*.jpg;*.jpeg;*.heic;*.heif;*.hif;*.png;*.webp;*.mp4;*.mov;*.avi;*.mkv;*.3gp;*.m4v;*.wmv;*.mts;*.m2ts|All files|*.*"
         };
         if (dialog.ShowDialog(this) != true) return;
 

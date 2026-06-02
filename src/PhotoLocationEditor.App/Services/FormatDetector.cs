@@ -16,7 +16,8 @@ public enum ImageFormat
     Mov,
     Avi,
     Mkv,
-    Mts
+    Mts,
+    Wmv
 }
 
 public static class FormatDetector
@@ -25,7 +26,7 @@ public static class FormatDetector
     {
         if (!File.Exists(path)) return ImageFormat.Unknown;
 
-        var header = new byte[12];
+        var header = new byte[188 * 2 + 4];
         using var stream = File.OpenRead(path);
         var read = stream.Read(header, 0, header.Length);
         if (read < 4) return ImageFormat.Unknown;
@@ -87,13 +88,20 @@ public static class FormatDetector
 
         // WMV/ASF: 30 26 B2 75
         if (header[0] == 0x30 && header[1] == 0x26 && header[2] == 0xB2 && header[3] == 0x75)
-            return ImageFormat.Avi;
+            return ImageFormat.Wmv;
 
-        // MTS/M2TS: MPEG Transport Stream sync byte 0x47
-        if (header[0] == 0x47 && header[1] == 0x40)
+        // MTS/M2TS: MPEG transport stream packets. M2TS has a 4-byte timestamp before 0x47.
+        if (LooksLikeTransportStream(header, read, 0) || LooksLikeTransportStream(header, read, 4))
             return ImageFormat.Mts;
 
         return ImageFormat.Unknown;
+    }
+
+    private static bool LooksLikeTransportStream(byte[] header, int read, int offset)
+    {
+        return read > offset + 188 &&
+               header[offset] == 0x47 &&
+               header[offset + 188] == 0x47;
     }
 
     public static string GetStandardExtension(ImageFormat format) => format switch
@@ -110,8 +118,23 @@ public static class FormatDetector
         ImageFormat.Avi => ".avi",
         ImageFormat.Mkv => ".mkv",
         ImageFormat.Mts => ".mts",
+        ImageFormat.Wmv => ".wmv",
         _ => string.Empty
     };
+
+    public static bool IsExtensionValid(string path, ImageFormat format)
+    {
+        var extension = Path.GetExtension(path).ToLowerInvariant();
+        return format switch
+        {
+            ImageFormat.Jpeg => extension is ".jpg" or ".jpeg",
+            ImageFormat.Tiff => extension is ".tif" or ".tiff",
+            ImageFormat.Heic => extension is ".heic" or ".heif" or ".hif",
+            ImageFormat.Mp4 => extension is ".mp4" or ".m4v" or ".3gp",
+            ImageFormat.Mts => extension is ".mts" or ".m2ts",
+            _ => extension == GetStandardExtension(format)
+        };
+    }
 
     public static string GetFormatLabel(ImageFormat format) => format switch
     {
@@ -127,6 +150,7 @@ public static class FormatDetector
         ImageFormat.Avi => "AVI",
         ImageFormat.Mkv => "MKV",
         ImageFormat.Mts => "MTS",
+        ImageFormat.Wmv => "WMV",
         _ => "?"
     };
 }

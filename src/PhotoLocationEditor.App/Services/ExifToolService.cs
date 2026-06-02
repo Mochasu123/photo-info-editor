@@ -28,11 +28,41 @@ public sealed class ExifToolService
             or ".mp4" or ".mov" or ".avi" or ".mkv" or ".3gp" or ".m4v" or ".wmv" or ".mts" or ".m2ts";
     }
 
+    public static bool IsSupportedMetadataWrite(string path)
+    {
+        var extension = Path.GetExtension(path).ToLowerInvariant();
+        return extension is ".jpg" or ".jpeg" or ".heic" or ".heif" or ".hif" or ".png" or ".webp";
+    }
+
     public async Task ReadMetadataAsync(IReadOnlyList<PhotoItem> photos, CancellationToken cancellationToken = default)
     {
         if (photos.Count == 0) return;
 
-        var arguments = new List<string> { "-j", "-a", "-G1", "-s", "-n", "-u" };
+        var arguments = new List<string>
+        {
+            "-j",
+            "-a",
+            "-G1",
+            "-s",
+            "-n",
+            "-IFD0:Make",
+            "-ExifIFD:Make",
+            "-Composite:Make",
+            "-IFD0:Model",
+            "-ExifIFD:Model",
+            "-Composite:Model",
+            "-ExifIFD:DateTimeOriginal",
+            "-ExifIFD:CreateDate",
+            "-QuickTime:CreateDate",
+            "-XMP-exif:DateTimeOriginal",
+            "-IFD0:ModifyDate",
+            "-GPS:GPSLatitude",
+            "-GPS:GPSLongitude",
+            "-GPS:GPSAltitude",
+            "-Composite:GPSLatitude",
+            "-Composite:GPSLongitude",
+            "-Composite:GPSAltitude"
+        };
         var argFile = WriteArgsFile(photos.Select(p => p.Path));
         arguments.Add("-@"); arguments.Add(argFile);
 
@@ -60,6 +90,7 @@ public sealed class ExifToolService
         IProgress<WriteProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        ValidateWritableFiles(selectedPhotos);
         var targets = PrepareTargets(selectedPhotos, mode, outputDirectory, progress);
         if (targets.Count == 0)
         {
@@ -316,8 +347,19 @@ public sealed class ExifToolService
     public async Task WriteDateAsync(
         IReadOnlyList<PhotoItem> selectedPhotos,
         string dateTimeOriginal,
+        WriteMode mode,
+        string? outputDirectory,
+        IProgress<WriteProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        ValidateWritableFiles(selectedPhotos);
+        var targets = PrepareTargets(selectedPhotos, mode, outputDirectory, progress);
+        if (targets.Count == 0)
+        {
+            return;
+        }
+
+        progress?.Report(new WriteProgress("Writing date metadata with ExifTool...", null));
         var arguments = new List<string>
         {
             "-overwrite_original",
@@ -326,39 +368,52 @@ public sealed class ExifToolService
             $"-CreateDate={dateTimeOriginal}",
             $"-ModifyDate={dateTimeOriginal}"
         };
-        var dateArgFile = WriteArgsFile(selectedPhotos.Select(p => p.Path));
+        var dateArgFile = WriteArgsFile(targets.Select(t => t.Path));
         arguments.Add("-@"); arguments.Add(dateArgFile);
         var result = await RunAsync(arguments, cancellationToken);
         try { File.Delete(dateArgFile); } catch { }
         if (result.ExitCode != 0)
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
 
-        foreach (var photo in selectedPhotos)
-            photo.DateTaken = dateTimeOriginal;
+        foreach (var target in targets.Where(t => string.Equals(t.Photo.Path, t.Path, StringComparison.OrdinalIgnoreCase)))
+            target.Photo.DateTaken = dateTimeOriginal;
     }
 
     public async Task<int> WriteDateBatchAsync(
         IReadOnlyList<(PhotoItem Photo, string Date)> items,
-        IProgress<string>? progress,
+        IProgress<WriteProgress>? progress,
         WriteMode writeMode,
+        string? outputDirectory,
         CancellationToken cancellationToken = default)
     {
         var total = items.Count;
-        var argsFile = Path.GetTempFileName();
-        var lines = new List<string> { "-P" };
-        if (writeMode != WriteMode.DirectInPlace)
-            lines.Insert(0, "-overwrite_original");
-        for (var i = 0; i < total; i++)
+        if (total == 0)
         {
-            var (photo, dt) = items[i];
+            return 0;
+        }
+
+        var photos = items.Select(i => i.Photo).ToArray();
+        ValidateWritableFiles(photos);
+        var targets = PrepareTargets(photos, writeMode, outputDirectory, progress);
+        if (targets.Count == 0)
+        {
+            return 0;
+        }
+
+        var argsFile = Path.GetTempFileName();
+        var lines = new List<string> { "-overwrite_original", "-P" };
+        for (var i = 0; i < targets.Count; i++)
+        {
+            var dt = items[i].Date;
             lines.Add($"-DateTimeOriginal={dt}");
             lines.Add($"-CreateDate={dt}");
             lines.Add($"-ModifyDate={dt}");
-            lines.Add(photo.Path);
+            lines.Add(targets[i].Path);
             lines.Add("-execute");
         }
         File.WriteAllLines(argsFile, lines, System.Text.Encoding.UTF8);
 
+        progress?.Report(new WriteProgress("Writing checked dates with ExifTool...", null));
         var arguments = new List<string> { "-@", argsFile };
         var result = await RunAsync(arguments, cancellationToken);
         try { File.Delete(argsFile); } catch { }
@@ -367,11 +422,18 @@ public sealed class ExifToolService
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
 
         var count = 0;
-        foreach (var (photo, dt) in items)
+        for (var i = 0; i < targets.Count; i++)
         {
-            photo.DateTaken = dt;
+            var target = targets[i];
+            if (string.Equals(target.Photo.Path, target.Path, StringComparison.OrdinalIgnoreCase))
+            {
+                target.Photo.DateTaken = items[i].Date;
+            }
+
             count++;
-            progress?.Report($"{count}/{total}");
+            progress?.Report(new WriteProgress(
+                $"Date check written ({count}/{total})...",
+                count * 100d / total));
         }
         return count;
     }
@@ -381,6 +443,24 @@ public sealed class ExifToolService
         var tmpFile = Path.GetTempFileName();
         File.WriteAllLines(tmpFile, paths, System.Text.Encoding.UTF8);
         return tmpFile;
+    }
+
+    private static void ValidateWritableFiles(IReadOnlyList<PhotoItem> photos)
+    {
+        var unsupported = photos
+            .Where(photo => !IsSupportedMetadataWrite(photo.Path))
+            .Select(photo => photo.FileName)
+            .Take(5)
+            .ToArray();
+
+        if (unsupported.Length == 0)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "Video metadata writing is not enabled yet. Supported write formats are JPG/JPEG/HEIC/HEIF/HIF/PNG/WebP. " +
+            $"Skipped examples: {string.Join(", ", unsupported)}");
     }
 
     private async Task<(int ExitCode, string Output, string Error)> RunAsync(

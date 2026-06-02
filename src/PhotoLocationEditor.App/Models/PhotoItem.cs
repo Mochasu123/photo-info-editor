@@ -177,14 +177,26 @@ public sealed class PhotoItem : INotifyPropertyChanged
     public string FormatDisplay => Services.FormatDetector.GetFormatLabel(_detectedFormat);
     public bool IsExtensionMismatched =>
         _detectedFormat != Services.ImageFormat.Unknown &&
-        !Path.EndsWith(Services.FormatDetector.GetStandardExtension(_detectedFormat), StringComparison.OrdinalIgnoreCase);
+        !Services.FormatDetector.IsExtensionValid(Path, _detectedFormat);
     public string MismatchDisplay => IsExtensionMismatched ? "⚠" : string.Empty;
     public string WrongExtensionHint => IsExtensionMismatched
         ? $"实际: {FormatDisplay}, 后缀: {System.IO.Path.GetExtension(Path)}"
         : string.Empty;
 
-    public DateTime FileCreationTime { get; set; }
+    public DateTime FileCreationTime { get; private set; }
     public string FileCreationTimeDisplay => FileCreationTime == default ? "?" : FileCreationTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+    public void SetFileCreationTime(DateTime value)
+    {
+        if (FileCreationTime == value)
+        {
+            return;
+        }
+
+        FileCreationTime = value;
+        OnPropertyChanged(nameof(FileCreationTime));
+        OnPropertyChanged(nameof(FileCreationTimeDisplay));
+    }
 
     public void SetDetectedFormat(Services.ImageFormat format)
     {

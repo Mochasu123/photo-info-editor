@@ -26,7 +26,7 @@ public partial class DateCheckDialog : Window
         ExecuteABBtn.Content = "处理建议项";
         ExecuteAllBtn.Content = "全部处理";
         CancelBtn.Click += (_, _) => { DialogResult = false; Close(); };
-        ExecuteABBtn.Click += (_, _) => { SelectedIds = suggestFix.Select(i => i.Photo.FileName).ToHashSet(); DialogResult = true; Close(); };
+        ExecuteABBtn.Click += (_, _) => { SelectedIds = suggestFix.Select(i => i.Photo.Path).ToHashSet(StringComparer.OrdinalIgnoreCase); DialogResult = true; Close(); };
         ExecuteAllBtn.Click += (_, _) => { SelectedIds = null; DialogResult = true; Close(); };
     }
 

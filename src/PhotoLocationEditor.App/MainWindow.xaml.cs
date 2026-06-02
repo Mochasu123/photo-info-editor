@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -179,7 +180,7 @@ public partial class MainWindow : Window
     // ---- Import ----
     private async void AddFiles_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Multiselect = true, Filter = "Image/Video files|*.jpg;*.jpeg;*.heic;*.heif;*.hif;*.png;*.webp|All files|*.*" };
+        var dialog = new Microsoft.Win32.OpenFileDialog { Multiselect = true, Filter = "Image/Video files|*.jpg;*.jpeg;*.heic;*.heif;*.hif;*.png;*.webp;*.mp4;*.mov;*.avi;*.mkv;*.3gp;*.m4v;*.wmv;*.mts;*.m2ts|All files|*.*" };
         if (dialog.ShowDialog(this) == true) await AddPathsAsync(dialog.FileNames);
     }
 
@@ -234,6 +235,7 @@ public partial class MainWindow : Window
 
     private async Task AddPathsAsync(IEnumerable<string> paths)
     {
+        var sw = Stopwatch.StartNew();
         var existing = Photos.Select(p => p.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var added = paths.Where(File.Exists).Where(ExifToolService.IsSupportedImage).Where(path => existing.Add(path)).Select(path => new PhotoItem(path)).ToArray();
         foreach (var item in added) Photos.Add(item);
@@ -245,9 +247,10 @@ public partial class MainWindow : Window
             foreach (var photo in added)
             {
                 photo.SetDetectedFormat(FormatDetector.Detect(photo.Path));
-                try { photo.FileCreationTime = File.GetCreationTime(photo.Path); } catch { }
+                try { photo.SetFileCreationTime(File.GetCreationTime(photo.Path)); } catch { }
             }
-            StatusText.Text = string.Format(CultureInfo.CurrentCulture, T("ImportedPhotos"), added.Length);
+            sw.Stop();
+            StatusText.Text = string.Format(CultureInfo.CurrentCulture, T("ImportedPhotos"), added.Length) + $" ({sw.Elapsed.TotalSeconds:0.0}s)";
             UpdateSelectedPhotoPanel();
             UpdateStats();
         }
@@ -273,7 +276,16 @@ public partial class MainWindow : Window
     {
         using var dlg = new WinForms.FolderBrowserDialog { Description = T("OutputDialogTitle"), UseDescriptionForTitle = true };
         if (dlg.ShowDialog() == WinForms.DialogResult.OK)
-            OutputDirectoryTextBox.Text = dlg.SelectedPath;
+        {
+            if (ReferenceEquals(sender, ConvertBrowseButton))
+            {
+                ConvertOutputTextBox.Text = dlg.SelectedPath;
+            }
+            else
+            {
+                OutputDirectoryTextBox.Text = dlg.SelectedPath;
+            }
+        }
     }
 
     // ---- Column ----
@@ -434,11 +446,13 @@ public partial class MainWindow : Window
         ToggleBusy(true, string.Format(CultureInfo.CurrentCulture, T("WritingPhotos"), selected.Length));
         try
         {
+            var sw = Stopwatch.StartNew();
             var progress = new Progress<WriteProgress>(UpdateWriteProgress);
             var targets = await _exifToolService.WriteGpsAsync(selected, _currentCoordinate, mode, OutputDirectoryTextBox.Text, progress);
             if (mode is WriteMode.InPlaceWithBackup or WriteMode.DirectInPlace) { UpdateWriteProgress(new("Refreshing...", null)); await _exifToolService.ReadMetadataAsync(selected); }
             foreach (var p in selected) p.Status = "Written";
-            StatusText.Text = string.Format(CultureInfo.CurrentCulture, T("WriteDoneStatus"), targets.Count); UpdateStats();
+            sw.Stop();
+            StatusText.Text = string.Format(CultureInfo.CurrentCulture, T("WriteDoneStatus"), targets.Count) + $" ({sw.Elapsed.TotalSeconds:0.0}s)"; UpdateStats();
             ShowToast(T("WriteDoneMessage"));
         }
         catch (Exception ex) { StatusText.Text = ex.Message; System.Windows.MessageBox.Show(this, ex.Message, T("WriteFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Error); }
@@ -513,11 +527,30 @@ public partial class MainWindow : Window
     {
         var selected = Photos.Where(p => p.IsSelected).ToArray();
         if (selected.Length == 0) { MessageBoxShow(T("NoPhotosSelectedMessage"), T("NoPhotosSelectedTitle"), MessageBoxImage.Information); return; }
+        var mode = GetWriteMode();
+        if (mode == WriteMode.CopyToOutputDirectory && string.IsNullOrWhiteSpace(OutputDirectoryTextBox.Text))
+        { MessageBoxShow(T("MissingOutputMessage"), T("MissingOutputTitle"), MessageBoxImage.Warning); return; }
         var dt = GetDateInput();
-        var confirm = System.Windows.MessageBox.Show(this, $"将 {selected.Length} 张照片的拍摄时间写入为:\n{dt}\n\n确定？", "写入日期", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+        var desc = mode switch { WriteMode.CopyToOutputDirectory => string.Format(CultureInfo.CurrentCulture, T("CopyToConfirm"), OutputDirectoryTextBox.Text), WriteMode.DirectInPlace => T("DirectConfirm"), _ => T("BackupConfirm") };
+        var confirm = System.Windows.MessageBox.Show(this, $"将 {selected.Length} 张照片的拍摄时间写入为:\n{dt}\n\n{desc}\n\n确定？", "写入日期", MessageBoxButton.OKCancel, MessageBoxImage.Question);
         if (confirm != MessageBoxResult.OK) return;
-        try { await _exifToolService.WriteDateAsync(selected, dt, default); StatusText.Text = $"已写入日期到 {selected.Length} 张照片。"; UpdateStats(); }
+        ToggleBusy(true, $"正在写入日期到 {selected.Length} 张照片...");
+        try
+        {
+            var sw = Stopwatch.StartNew();
+            var progress = new Progress<WriteProgress>(UpdateWriteProgress);
+            await _exifToolService.WriteDateAsync(selected, dt, mode, OutputDirectoryTextBox.Text, progress);
+            if (mode is WriteMode.InPlaceWithBackup or WriteMode.DirectInPlace)
+            {
+                UpdateWriteProgress(new("Refreshing...", null));
+                await _exifToolService.ReadMetadataAsync(selected);
+            }
+            sw.Stop();
+            StatusText.Text = $"已写入日期到 {selected.Length} 张照片。({sw.Elapsed.TotalSeconds:0.0}s)";
+            UpdateStats();
+        }
         catch (Exception ex) { System.Windows.MessageBox.Show(this, ex.Message, "写入失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+        finally { ToggleBusy(false); }
     }
 
     // ---- Date Check ----
@@ -620,31 +653,40 @@ public partial class MainWindow : Window
 
         // Items to fix: A (no EXIF) + B (EXIF > file) + F (EXIF invalid)
         var toFix = dlg.SelectedIds is null
-            ? items.Where(i => i.Category is "A" or "B" or "F" && i.FileDate != "?").ToArray()
-            : items.Where(i => (i.Category is "A" or "B" or "F") && i.FileDate != "?" && dlg.SelectedIds!.Contains(i.Photo.FileName)).ToArray();
+            ? items.Where(i => (i.Category is "A" or "B" or "F") && i.FileDate != "?").ToArray()
+            : items.Where(i => (i.Category is "A" or "B" or "F") && i.FileDate != "?" && dlg.SelectedIds!.Contains(i.Photo.Path)).ToArray();
 
         if (toFix.Length == 0) { StatusText.Text = "无需修改。"; return; }
+        var mode = GetWriteMode();
+        if (mode == WriteMode.CopyToOutputDirectory && string.IsNullOrWhiteSpace(OutputDirectoryTextBox.Text))
+        { MessageBoxShow(T("MissingOutputMessage"), T("MissingOutputTitle"), MessageBoxImage.Warning); return; }
 
         ToggleBusy(true, $"日期校对中 0/{toFix.Length}...");
         WriteProgressBar.IsIndeterminate = false;
-        var progress = new Progress<string>(msg =>
+        var progress = new Progress<WriteProgress>(p =>
         {
-            WriteProgressBar.Value = double.TryParse(msg.Split('/')[0], out var n) ? n * 100.0 / toFix.Length : 0;
-            StatusText.Text = $"日期校对中 {msg}...";
+            UpdateWriteProgress(p);
         });
 
         var batchItems = toFix.Select(i => (i.Photo, Date: $"{i.FileDate}:00")).ToArray();
         try
         {
-            await _exifToolService.WriteDateBatchAsync(batchItems, progress, GetWriteMode());
-            StatusText.Text = $"日期校对完成，已写入 {toFix.Length} 张。"; UpdateStats();
+            var sw = Stopwatch.StartNew();
+            await _exifToolService.WriteDateBatchAsync(batchItems, progress, mode, OutputDirectoryTextBox.Text);
+            if (mode is WriteMode.InPlaceWithBackup or WriteMode.DirectInPlace)
+            {
+                UpdateWriteProgress(new("Refreshing...", null));
+                await _exifToolService.ReadMetadataAsync(toFix.Select(i => i.Photo).ToArray());
+            }
+            sw.Stop();
+            StatusText.Text = $"日期校对完成，已写入 {toFix.Length} 张。({sw.Elapsed.TotalSeconds:0.0}s)"; UpdateStats();
         }
         catch (Exception ex) { StatusText.Text = ex.Message; }
         finally { ToggleBusy(false); }
     }
 
     // ---- Format Tools ----
-    private void FixExtensions_Click(object sender, RoutedEventArgs e)
+    private async void FixExtensions_Click(object sender, RoutedEventArgs e)
     {
         var toFix = Photos.Where(p => p.IsSelected && p.IsExtensionMismatched).ToArray();
         if (toFix.Length == 0) { MessageBoxShow(T("NoMismatchSelected"), T("NoMismatchTitle"), MessageBoxImage.Information); return; }
@@ -658,7 +700,11 @@ public partial class MainWindow : Window
             File.Move(photo.Path, newPath); photo.UpdatePath(newPath);
             photo.SetDetectedFormat(FormatDetector.Detect(newPath)); updated.Add(photo); renamed++;
         }
-        if (updated.Count > 0) { StatusText.Text = string.Format(CultureInfo.CurrentCulture, T("ExtensionsFixed"), renamed); try { _ = _exifToolService.ReadMetadataAsync(updated); } catch { } }
+        if (updated.Count > 0)
+        {
+            StatusText.Text = string.Format(CultureInfo.CurrentCulture, T("ExtensionsFixed"), renamed);
+            try { await _exifToolService.ReadMetadataAsync(updated); } catch { }
+        }
         UpdateStats();
     }
 
@@ -670,16 +716,19 @@ public partial class MainWindow : Window
             ? item.Tag?.ToString() switch { "png" => Services.ImageFormat.Png, "bmp" => Services.ImageFormat.Bmp, "gif" => Services.ImageFormat.Gif, "tiff" => Services.ImageFormat.Tiff, _ => Services.ImageFormat.Jpeg }
             : Services.ImageFormat.Jpeg;
         var mode = GetConvertWriteMode();
-        if (mode == WriteMode.CopyToOutputDirectory && string.IsNullOrWhiteSpace(OutputDirectoryTextBox.Text))
+        var convertOutputDirectory = ConvertOutputTextBox.Text;
+        if (mode == WriteMode.CopyToOutputDirectory && string.IsNullOrWhiteSpace(convertOutputDirectory))
         { MessageBoxShow(T("MissingOutputMessage"), T("MissingOutputTitle"), MessageBoxImage.Warning); return; }
         if (System.Windows.MessageBox.Show(this, string.Format(CultureInfo.CurrentCulture, T("ConfirmConvertMessage"), selected.Length, FormatDetector.GetFormatLabel(targetFormat)), T("ConfirmConvertTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         ToggleBusy(true, string.Format(CultureInfo.CurrentCulture, T("ConvertingPhotos"), selected.Length));
         try
         {
             var progress = new Progress<WriteProgress>(UpdateWriteProgress);
-            var results = await _imageConversionService.ConvertAsync(selected, targetFormat, mode, OutputDirectoryTextBox.Text, progress);
+            var sw = Stopwatch.StartNew();
+            var results = await _imageConversionService.ConvertAsync(selected, targetFormat, mode, convertOutputDirectory, progress);
             foreach (var p in selected) p.Status = "Converted";
-            StatusText.Text = string.Format(CultureInfo.CurrentCulture, T("ConvertDoneStatus"), results.Count); UpdateStats();
+            sw.Stop();
+            StatusText.Text = string.Format(CultureInfo.CurrentCulture, T("ConvertDoneStatus"), results.Count) + $" ({sw.Elapsed.TotalSeconds:0.0}s)"; UpdateStats();
             ShowToast(string.Format(CultureInfo.CurrentCulture, T("ConvertDoneMessage"), results.Count));
         }
         catch (Exception ex) { StatusText.Text = ex.Message; System.Windows.MessageBox.Show(this, ex.Message, T("ConvertFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Error); }
