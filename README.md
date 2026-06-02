@@ -9,13 +9,15 @@
 - 支持 WGS-84 / GCJ-02 / BD-09 坐标系转换
 - 多种格式输入（十进制度、度分秒、N/E 前后缀）
 - 批量写入三种模式：直接写入 / 原地备份 / 输出到新目录
-- 写入支持 JPG/JPEG/HEIC/HEIF/HIF/PNG/WebP；视频目前仅支持读取元数据
+- 写入支持 JPG/JPEG/HEIC/HEIF/HIF/PNG/WebP
+- MP4/MOV/M4V/3GP 支持实验性 QuickTime GPS 写入
 
 **日期工具**
 - DatePicker 选日期 + ▲▼ 调时间（HH:MM）
 - 日期校对：智能比对 EXIF / 文件创建 / 文件修改时间，分类展示建议
 - 手动写入 + 参考照片提取日期
 - 日期写入同样遵守三种写入模式
+- MP4/MOV/M4V/3GP 支持实验性 QuickTime 日期写入
 
 **格式工具**
 - 自动检测真实格式（magic bytes），异常后缀 ⚠ 警示 + 一键更正
@@ -36,7 +38,7 @@
 
 ## 安装
 
-下载 `PhotoInfoEditor-0.2.1-win-x64.zip`，解压到任意目录，运行 `PhotoInfoEditor.exe`。
+下载 `PhotoInfoEditor-0.2.2-win-x64.zip`，解压到任意目录，运行 `PhotoInfoEditor.exe`。
 
 - Windows x64，无需安装 .NET 运行时
 
@@ -45,7 +47,8 @@
 - **直接写入原文件**：速度最快，不创建备份。
 - **原地写入 + Backup**：先在原文件旁创建 `.photo-info-backups`，再修改原文件。
 - **输出到新目录**：先复制到输出目录，只修改副本。
-- 视频文件目前只读取元数据，不开放 GPS/日期写入。
+- MP4/MOV/M4V/3GP 会写入 QuickTime GPS/日期标签；AVI/MKV/WMV/MTS/M2TS 目前只读取元数据。
+- 视频写入能否被手机相册识别取决于系统和容器标签规则，建议先用副本验证。
 
 ---
 
@@ -72,13 +75,15 @@ Photo metadata editing tool. Formerly Photo Location Editor.
 - WGS-84 / GCJ-02 / BD-09 coordinate conversion
 - Multiple input formats (decimal, DMS, directional prefixes)
 - Batch write: Direct / Backup / Copy to output directory
-- Metadata writing supports JPG/JPEG/HEIC/HEIF/HIF/PNG/WebP. Video files are read-only for now.
+- Metadata writing supports JPG/JPEG/HEIC/HEIF/HIF/PNG/WebP.
+- MP4/MOV/M4V/3GP support experimental QuickTime GPS writing.
 
 **Date Tools**
 - DatePicker + ▲▼ time adjust (HH:MM)
 - Date check: intelligent comparison of EXIF / file creation / modification times
 - Manual write + reference photo date extraction
 - Date writes follow the same Direct / Backup / Copy write modes
+- MP4/MOV/M4V/3GP support experimental QuickTime date writing.
 
 **Format Tools**
 - Magic bytes detection with ⚠ mismatch warning + one-click fix
@@ -97,7 +102,7 @@ Photo metadata editing tool. Formerly Photo Location Editor.
 
 ## Installation
 
-Download `PhotoInfoEditor-0.2.1-win-x64.zip`, extract, run `PhotoInfoEditor.exe`.
+Download `PhotoInfoEditor-0.2.2-win-x64.zip`, extract, run `PhotoInfoEditor.exe`.
 
 - Windows x64, self-contained, no .NET runtime installation needed
 
@@ -106,7 +111,8 @@ Download `PhotoInfoEditor-0.2.1-win-x64.zip`, extract, run `PhotoInfoEditor.exe`
 - **Direct write**: fastest, no backup is created.
 - **Write in place with Backup**: creates `.photo-info-backups` beside the original files before editing.
 - **Copy to output directory**: copies files to the selected output directory and edits only the copies.
-- Video files are read-only for now; GPS/date writing is disabled for video containers.
+- MP4/MOV/M4V/3GP write QuickTime GPS/date tags. AVI/MKV/WMV/MTS/M2TS remain read-only for now.
+- Whether video GPS/date metadata is recognized depends on the phone gallery and container tag rules. Test on copies first.
 
 ## License
 

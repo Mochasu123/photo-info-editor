@@ -31,7 +31,19 @@ public sealed class ExifToolService
     public static bool IsSupportedMetadataWrite(string path)
     {
         var extension = Path.GetExtension(path).ToLowerInvariant();
+        return IsImageMetadataWrite(path) || IsQuickTimeVideoMetadataWrite(path);
+    }
+
+    private static bool IsImageMetadataWrite(string path)
+    {
+        var extension = Path.GetExtension(path).ToLowerInvariant();
         return extension is ".jpg" or ".jpeg" or ".heic" or ".heif" or ".hif" or ".png" or ".webp";
+    }
+
+    private static bool IsQuickTimeVideoMetadataWrite(string path)
+    {
+        var extension = Path.GetExtension(path).ToLowerInvariant();
+        return extension is ".mp4" or ".mov" or ".m4v" or ".3gp";
     }
 
     public async Task ReadMetadataAsync(IReadOnlyList<PhotoItem> photos, CancellationToken cancellationToken = default)
@@ -98,6 +110,36 @@ public sealed class ExifToolService
         }
 
         progress?.Report(new WriteProgress("Writing GPS metadata with ExifTool...", null));
+        var imageTargets = targets.Where(target => IsImageMetadataWrite(target.Path)).ToArray();
+        var quickTimeTargets = targets.Where(target => IsQuickTimeVideoMetadataWrite(target.Path)).ToArray();
+
+        if (imageTargets.Length > 0)
+        {
+            await WriteImageGpsAsync(imageTargets, coordinate, cancellationToken);
+        }
+
+        if (quickTimeTargets.Length > 0)
+        {
+            await WriteQuickTimeGpsAsync(quickTimeTargets, coordinate, cancellationToken);
+        }
+
+        var fujifilmGroups = imageTargets
+            .Where(target => IsFujifilm(target.Photo) && NeedsMakeModelFix(target.Photo))
+            .GroupBy(target => BuildFujifilmDisplayModel(target.Photo.CameraModel))
+            .ToArray();
+        if (fujifilmGroups.Length > 0)
+        {
+            await WriteFujifilmDisplayModelAsync(fujifilmGroups, progress, cancellationToken);
+        }
+
+        return targets.Select(target => target.Path).ToArray();
+    }
+
+    private async Task WriteImageGpsAsync(
+        IReadOnlyList<WriteTarget> targets,
+        GpsCoordinate coordinate,
+        CancellationToken cancellationToken)
+    {
         var arguments = new List<string>
         {
             "-overwrite_original",
@@ -124,17 +166,37 @@ public sealed class ExifToolService
         {
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
         }
+    }
 
-        var fujifilmGroups = targets
-            .Where(target => IsFujifilm(target.Photo) && NeedsMakeModelFix(target.Photo))
-            .GroupBy(target => BuildFujifilmDisplayModel(target.Photo.CameraModel))
-            .ToArray();
-        if (fujifilmGroups.Length > 0)
+    private async Task WriteQuickTimeGpsAsync(
+        IReadOnlyList<WriteTarget> targets,
+        GpsCoordinate coordinate,
+        CancellationToken cancellationToken)
+    {
+        var arguments = new List<string>
         {
-            await WriteFujifilmDisplayModelAsync(fujifilmGroups, progress, cancellationToken);
-        }
+            "-overwrite_original",
+            "-P",
+            $"-QuickTime:GPSCoordinates={FormatQuickTimeGps(coordinate)}"
+        };
 
-        return targets.Select(target => target.Path).ToArray();
+        var gpsArgFile = WriteArgsFile(targets.Select(t => t.Path));
+        arguments.Add("-@"); arguments.Add(gpsArgFile);
+        var result = await RunAsync(arguments, cancellationToken);
+        try { File.Delete(gpsArgFile); } catch { }
+        if (result.ExitCode != 0)
+        {
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
+        }
+    }
+
+    private static string FormatQuickTimeGps(GpsCoordinate coordinate)
+    {
+        var latitude = coordinate.Latitude.ToString("0.######", CultureInfo.InvariantCulture);
+        var longitude = coordinate.Longitude.ToString("0.######", CultureInfo.InvariantCulture);
+        return coordinate.Altitude.HasValue
+            ? string.Join(", ", latitude, longitude, coordinate.Altitude.Value.ToString("0.#", CultureInfo.InvariantCulture))
+            : string.Join(", ", latitude, longitude);
     }
 
     private static void ApplyMetadata(PhotoItem photo, JsonElement item)
@@ -360,6 +422,28 @@ public sealed class ExifToolService
         }
 
         progress?.Report(new WriteProgress("Writing date metadata with ExifTool...", null));
+        var imageTargets = targets.Where(target => IsImageMetadataWrite(target.Path)).ToArray();
+        var quickTimeTargets = targets.Where(target => IsQuickTimeVideoMetadataWrite(target.Path)).ToArray();
+
+        if (imageTargets.Length > 0)
+        {
+            await WriteImageDateAsync(imageTargets, dateTimeOriginal, cancellationToken);
+        }
+
+        if (quickTimeTargets.Length > 0)
+        {
+            await WriteQuickTimeDateAsync(quickTimeTargets, dateTimeOriginal, cancellationToken);
+        }
+
+        foreach (var target in targets.Where(t => string.Equals(t.Photo.Path, t.Path, StringComparison.OrdinalIgnoreCase)))
+            target.Photo.DateTaken = dateTimeOriginal;
+    }
+
+    private async Task WriteImageDateAsync(
+        IReadOnlyList<WriteTarget> targets,
+        string dateTimeOriginal,
+        CancellationToken cancellationToken)
+    {
         var arguments = new List<string>
         {
             "-overwrite_original",
@@ -374,9 +458,20 @@ public sealed class ExifToolService
         try { File.Delete(dateArgFile); } catch { }
         if (result.ExitCode != 0)
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
+    }
 
-        foreach (var target in targets.Where(t => string.Equals(t.Photo.Path, t.Path, StringComparison.OrdinalIgnoreCase)))
-            target.Photo.DateTaken = dateTimeOriginal;
+    private async Task WriteQuickTimeDateAsync(
+        IReadOnlyList<WriteTarget> targets,
+        string dateTimeOriginal,
+        CancellationToken cancellationToken)
+    {
+        var arguments = BuildQuickTimeDateArguments(dateTimeOriginal);
+        var dateArgFile = WriteArgsFile(targets.Select(t => t.Path));
+        arguments.Add("-@"); arguments.Add(dateArgFile);
+        var result = await RunAsync(arguments, cancellationToken);
+        try { File.Delete(dateArgFile); } catch { }
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Error) ? result.Output : result.Error);
     }
 
     public async Task<int> WriteDateBatchAsync(
@@ -405,9 +500,16 @@ public sealed class ExifToolService
         for (var i = 0; i < targets.Count; i++)
         {
             var dt = items[i].Date;
-            lines.Add($"-DateTimeOriginal={dt}");
-            lines.Add($"-CreateDate={dt}");
-            lines.Add($"-ModifyDate={dt}");
+            if (IsQuickTimeVideoMetadataWrite(targets[i].Path))
+            {
+                AddQuickTimeDateArguments(lines, dt);
+            }
+            else
+            {
+                lines.Add($"-DateTimeOriginal={dt}");
+                lines.Add($"-CreateDate={dt}");
+                lines.Add($"-ModifyDate={dt}");
+            }
             lines.Add(targets[i].Path);
             lines.Add("-execute");
         }
@@ -445,6 +547,27 @@ public sealed class ExifToolService
         return tmpFile;
     }
 
+    private static List<string> BuildQuickTimeDateArguments(string dateTimeOriginal)
+    {
+        var arguments = new List<string>
+        {
+            "-overwrite_original",
+            "-P"
+        };
+        AddQuickTimeDateArguments(arguments, dateTimeOriginal);
+        return arguments;
+    }
+
+    private static void AddQuickTimeDateArguments(List<string> arguments, string dateTimeOriginal)
+    {
+        arguments.Add($"-QuickTime:CreateDate={dateTimeOriginal}");
+        arguments.Add($"-QuickTime:ModifyDate={dateTimeOriginal}");
+        arguments.Add($"-TrackCreateDate={dateTimeOriginal}");
+        arguments.Add($"-TrackModifyDate={dateTimeOriginal}");
+        arguments.Add($"-MediaCreateDate={dateTimeOriginal}");
+        arguments.Add($"-MediaModifyDate={dateTimeOriginal}");
+    }
+
     private static void ValidateWritableFiles(IReadOnlyList<PhotoItem> photos)
     {
         var unsupported = photos
@@ -459,7 +582,7 @@ public sealed class ExifToolService
         }
 
         throw new InvalidOperationException(
-            "Video metadata writing is not enabled yet. Supported write formats are JPG/JPEG/HEIC/HEIF/HIF/PNG/WebP. " +
+            "Metadata writing is enabled for JPG/JPEG/HEIC/HEIF/HIF/PNG/WebP and QuickTime videos (MP4/MOV/M4V/3GP). " +
             $"Skipped examples: {string.Join(", ", unsupported)}");
     }
 
