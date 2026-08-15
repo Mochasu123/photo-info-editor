@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -9,10 +9,21 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>appicon.ico</ApplicationIcon>
     <AssemblyName>PhotoInfoEditor</AssemblyName>
-    <Version>0.2.3</Version>
-    <FileVersion>0.2.3.0</FileVersion>
-    <AssemblyVersion>0.2.3.0</AssemblyVersion>
+    <Version>0.3.0</Version>
+    <FileVersion>0.3.0.0</FileVersion>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- V2 window replaces the original MainWindow implementation -->
+    <Page Remove="MainWindow.xaml" />
+    <Compile Remove="MainWindow.xaml.cs" />
+    <Compile Remove="Services\ImageConversionService.cs" />
+    <Compile Remove="Services\ExifToolService.cs" />
+    <Compile Remove="Models\WriteMode.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />

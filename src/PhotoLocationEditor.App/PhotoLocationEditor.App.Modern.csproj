@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>appicon.ico</ApplicationIcon>
+    <AssemblyName>PhotoInfoEditor</AssemblyName>
+    <RootNamespace>PhotoLocationEditor.App</RootNamespace>
+    <BaseIntermediateOutputPath>obj\modern\</BaseIntermediateOutputPath>
+    <Version>0.3.0</Version>
+    <FileVersion>0.3.0.0</FileVersion>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- WinForms is only used through the `WinForms` alias; drop its implicit using so
+         WPF types (TextBox, KeyEventArgs, DataFormats, ...) are never ambiguous. -->
+    <Using Remove="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Keep the legacy project's obj\ (PhotoLocationEditor.App.csproj) out of this project's default globs -->
+    <Compile Remove="obj\**\*.cs" />
+    <Page Remove="obj\**\*.xaml" />
+    <ApplicationDefinition Remove="obj\**\*.xaml" />
+    <EmbeddedResource Remove="obj\**" />
+    <None Remove="obj\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- V2 window and services replace the original implementations -->
+    <Page Remove="MainWindow.xaml" />
+    <Compile Remove="MainWindow.xaml.cs" />
+    <Compile Remove="Services\ImageConversionService.cs" />
+    <Compile Remove="Services\ExifToolService.cs" />
+    <Compile Remove="Models\WriteMode.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Tools\**\*.*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+
+</Project>

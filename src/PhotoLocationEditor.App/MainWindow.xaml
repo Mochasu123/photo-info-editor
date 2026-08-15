@@ -4,313 +4,379 @@
         TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType"
         FontFamily="Microsoft YaHei, Segoe UI Variable Text, Segoe UI, sans-serif"
         Title="Photo Info Editor"
-        Width="1220" Height="760" MinWidth="1080" MinHeight="640"
+        Width="1240" Height="780" MinWidth="1080" MinHeight="640"
         Background="{DynamicResource Background}"
         AllowDrop="True" DragOver="Window_DragOver" Drop="Window_Drop"
         Closing="Window_Closing" PreviewKeyDown="Window_PreviewKeyDown">
     <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="204"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- ===== Title Bar ===== -->
-        <Grid Grid.Row="0" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-            <TextBlock x:Name="AppTitleText" Grid.Column="0" Grid.Row="0"
-                       FontFamily="Microsoft YaHei, Segoe UI Variable Display, Segoe UI, sans-serif"
-                       FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
-            <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
-                    <TextBlock x:Name="WriteModeLabel" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,4,0"/>
-                    <ComboBox x:Name="WriteModeComboBox" Width="140" FontSize="12"
-                              SelectedIndex="2" SelectionChanged="WriteModeComboBox_SelectionChanged">
-                        <ComboBoxItem x:Name="CopyModeItem" Content="输出到新目录"/>
-                        <ComboBoxItem x:Name="BackupModeItem" Content="原地写入 + Backup"/>
-                        <ComboBoxItem x:Name="DirectModeItem" Content="直接写入原文件"/>
-                    </ComboBox>
-                </StackPanel>
-                <Border x:Name="OutputDirContainer" Visibility="Collapsed" Margin="0,0,6,0">
-                    <DockPanel>
-                        <Button x:Name="BrowseOutputButton" Content="浏览" Height="30" Padding="8,0" Margin="6,0,0,0" Click="ChooseOutputDirectory_Click"/>
-                        <TextBox x:Name="OutputDirectoryTextBox" Width="140" FontSize="12" MinHeight="30"/>
-                    </DockPanel>
-                </Border>
-                <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
-                    <TextBlock x:Name="ThemeLabel" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,4,0"/>
-                    <ComboBox x:Name="ThemeComboBox" Width="110" FontSize="12" SelectionChanged="ThemeComboBox_SelectionChanged"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
-                    <TextBlock x:Name="LanguageLabel" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,4,0"/>
-                    <ComboBox x:Name="LanguageComboBox" Width="70" FontSize="12" SelectionChanged="LanguageComboBox_SelectionChanged">
-                        <ComboBoxItem x:Name="ChineseLanguageItem" Tag="zh">中文</ComboBoxItem>
-                        <ComboBoxItem Tag="en" Content="EN"/>
-                    </ComboBox>
-                </StackPanel>
-                <Border Background="{DynamicResource StatusReadyBg}" CornerRadius="6" Padding="8,4">
-                    <TextBlock x:Name="ExifToolStatusText" FontSize="11" Foreground="{DynamicResource StatusReady}"/>
-                </Border>
-            </StackPanel>
-            <TextBlock x:Name="AppSubtitleText" Grid.Column="0" Grid.Row="1" Margin="0,2,0,0" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
-            <TextBlock x:Name="DropHintText" Grid.Column="0" Grid.Row="2" Margin="0,2,0,0" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
-            <TextBlock x:Name="WriteModeHintText" Grid.Column="1" Grid.Row="2" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
-        </Grid>
-
-        <!-- ===== Main Content ===== -->
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="720"/>
-                <ColumnDefinition Width="360"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- ====== LEFT ====== -->
-            <Grid Grid.Column="0" Margin="0,0,12,0">
+        <!-- ===== Sidebar ===== -->
+        <Border Grid.Column="0" Style="{StaticResource ShellPanel}" Padding="16">
+            <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <!-- Toolbar -->
-                <Border Grid.Row="0" Style="{StaticResource CardPanelPlain}" Padding="10,8" Margin="0,0,0,8">
-                    <DockPanel><StackPanel Orientation="Horizontal">
-                            <Button x:Name="AddPhotosButton" Click="AddFiles_Click"/>
-                            <Button x:Name="AddFolderButton" Click="AddFolder_Click"/>
-                            <CheckBox x:Name="IncludeSubfoldersCheckBox" VerticalAlignment="Center" Margin="4,0,8,0" FontSize="13"/>
-                            <Separator Width="1" Height="20" Margin="0,0,8,0"/>
-                            <Button x:Name="SelectAllButton" Click="SelectAll_Click"/>
-                            <Button x:Name="SelectNoneButton" Click="SelectNone_Click"/>
-                            <Button x:Name="MarkHighlightedButton" Click="MarkHighlighted_Click"/>
-                            <Button x:Name="UnmarkHighlightedButton" Click="UnmarkHighlighted_Click"/>
-                            <Button x:Name="InvertSelectionButton" Click="InvertSelection_Click"/>
-                            <Separator Width="1" Height="20" Margin="0,0,8,0"/>
-                            <Button x:Name="RemoveSelectedButton" Click="RemoveSelected_Click"/>
-                            <Button x:Name="ClearButton" Click="Clear_Click"/>
-                    </StackPanel></DockPanel>
-                </Border>
-                <!-- Filter -->
-                <Border Grid.Row="1" Style="{StaticResource CardPanelPlain}" Padding="10,8" Margin="0,0,0,8">
-                    <DockPanel><StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource TagButton}" Content="全部" x:Name="FilterAllButton" Click="FilterAll_Click"/>
-                            <Button Style="{StaticResource TagButton}" Content="无 GPS" x:Name="FilterNoGpsButton" Click="FilterNoGps_Click"/>
-                            <Button Style="{StaticResource TagButton}" Content="有 GPS" x:Name="FilterHasGpsButton" Click="FilterHasGps_Click"/>
-                            <Button Style="{StaticResource TagButton}" Content="FUJIFILM" x:Name="FilterFujiButton" Click="FilterFuji_Click"/>
-                            <Button Style="{StaticResource TagButton}" Content="HUAWEI" x:Name="FilterHuaweiButton" Click="FilterHuawei_Click"/>
-                            <Button Style="{StaticResource TagButton}" Content="格式⚠" x:Name="FilterMismatchButton" Click="FilterMismatch_Click"/>
-                    </StackPanel>
-                    <TextBox x:Name="FilterSearchBox" DockPanel.Dock="Right" Width="180" MinHeight="28" Padding="8,4" FontSize="12"/></DockPanel>
-                </Border>
-                <!-- Grid -->
-                <DataGrid Grid.Row="2" x:Name="PhotoGrid" ItemsSource="{Binding Photos}"
-                          AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="False"
-                          SelectionMode="Extended" CanUserReorderColumns="True" GridLinesVisibility="Horizontal"
-                          ColumnReordered="PhotoGrid_ColumnReordered" SelectionChanged="PhotoGrid_SelectionChanged"
-                          MouseDoubleClick="PhotoGrid_MouseDoubleClick" PreviewKeyDown="PhotoGrid_PreviewKeyDown"
-                          ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                    <DataGrid.Resources>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="TextWrapping" Value="Wrap"/>
-                            <Setter Property="Padding" Value="6,2"/>
-                        </Style>
-                    </DataGrid.Resources>
-                    <DataGrid.Columns>
-                        <DataGridTemplateColumn x:Name="UseColumn" Header="使用" Width="52" MinWidth="52">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                              HorizontalAlignment="Center" VerticalAlignment="Center" Click="UseCheckBox_Click"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn x:Name="FileColumn" Header="文件" Binding="{Binding FileName}" IsReadOnly="True" Width="*" MinWidth="120"/>
-                        <DataGridTextColumn Header="日期" Binding="{Binding DateTakenDate}" IsReadOnly="True" Width="Auto" MinWidth="78"/>
-                        <DataGridTextColumn Header="时间" Binding="{Binding DateTakenTime}" IsReadOnly="True" Width="Auto" MinWidth="52"/>
-                        <DataGridTextColumn x:Name="DeviceColumn" Header="设备" Binding="{Binding CameraDisplay}" IsReadOnly="True" Width="Auto" MinWidth="90"/>
-                        <DataGridTextColumn x:Name="CoordinatesColumn" Header="坐标" Binding="{Binding GpsDisplay}" IsReadOnly="True" Width="*" MinWidth="120"/>
-                        <DataGridTemplateColumn x:Name="MapColumn" Header="Map" Width="50" MinWidth="50">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Button Content="Map" Click="OpenPhotoMap_Click" Margin="0" Height="22" Padding="4,0"
-                                            FontSize="12" Background="Transparent" BorderThickness="0"
-                                            Foreground="{DynamicResource Accent}" Cursor="Hand"
-                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="格式" Binding="{Binding FormatDisplay}" IsReadOnly="True" Width="Auto" MinWidth="50"/>
-                        <DataGridTextColumn Header="⚠" Binding="{Binding MismatchDisplay}" IsReadOnly="True" Width="30" MinWidth="30"/>
-                        <DataGridTextColumn x:Name="PathColumn" Header="路径" IsReadOnly="True" Width="*" MinWidth="140">
-                            <DataGridTextColumn.Binding><Binding Path="Path"/></DataGridTextColumn.Binding>
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                    <Setter Property="ToolTip" Value="{Binding Path}"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-                <!-- Stats -->
-                <Border Grid.Row="3" Style="{StaticResource CardPanelPlain}" Padding="10,8" Margin="0,8,0,0">
-                    <DockPanel>
-                        <TextBlock x:Name="StatsTotalText" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,20,0"/>
-                        <TextBlock x:Name="StatsGpsText" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,20,0"/>
-                        <TextBlock x:Name="StatsSelectedText" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
-                    </DockPanel>
-                </Border>
+
+                <StackPanel Grid.Row="0" Margin="0,0,0,22">
+                    <TextBlock Text="Photo Info" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="Editor" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="1,2,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1">
+                    <Button x:Name="NavPhotosButton" Style="{StaticResource NavButtonActive}" Content="照片  Photos" Click="NavPhotos_Click"/>
+                    <Button x:Name="NavLocationButton" Style="{StaticResource NavButton}" Content="位置  Location" Click="NavLocation_Click"/>
+                    <Button x:Name="NavDateButton" Style="{StaticResource NavButton}" Content="日期  Date" Click="NavDate_Click"/>
+                    <Button x:Name="NavFormatButton" Style="{StaticResource NavButton}" Content="格式  Format" Click="NavFormat_Click"/>
+                    <Button x:Name="NavSettingsButton" Style="{StaticResource NavButton}" Content="设置  Settings" Click="NavSettings_Click"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="3">
+                    <Border Style="{StaticResource StatusBadge}" Margin="0,0,0,10">
+                        <TextBlock x:Name="ExifToolStatusText" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource StatusReady}" TextWrapping="Wrap"/>
+                    </Border>
+                    <TextBlock Text="Drag photos or folders into the window."
+                               Foreground="{DynamicResource TextMuted}" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
             </Grid>
+        </Border>
 
-            <!-- ====== RIGHT ====== -->
-            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"><StackPanel>
+        <!-- ===== Main Shell ===== -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-                    <!-- Info Card -->
-                    <Border Style="{StaticResource CardPanel}"><StackPanel>
-                        <DockPanel Margin="0,0,0,8">
-                            <Button x:Name="OpenSelectedMapButton" Content="Map" DockPanel.Dock="Right" Height="26" Width="50" Padding="0" FontSize="12"/>
-                            <TextBlock x:Name="SelectedPhotoGroup" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+            <!-- Header -->
+            <Border Grid.Row="0" Style="{StaticResource ShellPanel}" Padding="18,14" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="AppTitleText" Style="{StaticResource PageTitle}"/>
+                        <Border Style="{StaticResource StatusBadge}" Margin="12,0,0,0" Padding="8,3">
+                            <TextBlock Text="Workspace" Foreground="{DynamicResource Accent}" FontSize="11" FontWeight="SemiBold"/>
+                        </Border>
+                    </StackPanel>
+
+                    <TextBlock x:Name="AppSubtitleText" Grid.Column="0" Grid.Row="1"
+                               Style="{StaticResource PageSubtitle}" Margin="0,4,20,0"/>
+                    <TextBlock x:Name="DropHintText" Grid.Column="0" Grid.Row="2"
+                               Style="{StaticResource PageSubtitle}" Margin="0,6,20,0"/>
+
+                    <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" VerticalAlignment="Center">
+                        <WrapPanel HorizontalAlignment="Right" Margin="0,0,0,8">
+                            <TextBlock x:Name="WriteModeLabel" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,6,0"/>
+                            <ComboBox x:Name="WriteModeComboBox" Width="154" FontSize="12"
+                                      SelectedIndex="2" SelectionChanged="WriteModeComboBox_SelectionChanged">
+                                <ComboBoxItem x:Name="CopyModeItem" Content="输出到新目录"/>
+                                <ComboBoxItem x:Name="BackupModeItem" Content="原地写入 + Backup"/>
+                                <ComboBoxItem x:Name="DirectModeItem" Content="直接写入原文件"/>
+                            </ComboBox>
+
+                            <TextBlock x:Name="ThemeLabel" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="14,0,6,0"/>
+                            <ComboBox x:Name="ThemeComboBox" Width="112" FontSize="12" SelectionChanged="ThemeComboBox_SelectionChanged"/>
+
+                            <TextBlock x:Name="LanguageLabel" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="14,0,6,0"/>
+                            <ComboBox x:Name="LanguageComboBox" Width="76" FontSize="12" SelectionChanged="LanguageComboBox_SelectionChanged">
+                                <ComboBoxItem x:Name="ChineseLanguageItem" Tag="zh">中文</ComboBoxItem>
+                                <ComboBoxItem Tag="en" Content="EN"/>
+                            </ComboBox>
+                        </WrapPanel>
+                        <Border x:Name="OutputDirContainer" Visibility="Collapsed" Margin="0,0,0,6">
+                            <DockPanel HorizontalAlignment="Right">
+                                <Button x:Name="BrowseOutputButton" Content="浏览" Height="30" Padding="10,0" Margin="8,0,0,0" Click="ChooseOutputDirectory_Click"/>
+                                <TextBox x:Name="OutputDirectoryTextBox" Width="260" FontSize="12" MinHeight="30"/>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock x:Name="WriteModeHintText" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" MaxWidth="520"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Content -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="660"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="344"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Photos Work Area -->
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource CardPanelPlain}" Padding="12" Margin="0,0,0,10">
+                        <DockPanel LastChildFill="False">
+                            <WrapPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <Button x:Name="AddPhotosButton" Content="添加照片" Click="AddFiles_Click"/>
+                                <Button x:Name="AddFolderButton" Content="添加文件夹" Click="AddFolder_Click"/>
+                                <CheckBox x:Name="IncludeSubfoldersCheckBox" VerticalAlignment="Center" Margin="4,0,14,0" FontSize="13"/>
+                                <Button x:Name="RemoveSelectedButton" Content="移除" Click="RemoveSelected_Click"/>
+                                <Button x:Name="ClearButton" Content="清空" Click="Clear_Click"/>
+                            </WrapPanel>
+                            <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                                <Button x:Name="SelectAllButton" Content="全选" Click="SelectAll_Click"/>
+                                <Button x:Name="SelectNoneButton" Content="全不选" Click="SelectNone_Click"/>
+                                <Button x:Name="MarkHighlightedButton" Content="选中" Click="MarkHighlighted_Click"/>
+                                <Button x:Name="UnmarkHighlightedButton" Content="取消选中" Click="UnmarkHighlighted_Click"/>
+                                <Button x:Name="InvertSelectionButton" Content="反选" Click="InvertSelection_Click" Margin="0"/>
+                            </WrapPanel>
                         </DockPanel>
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Width="100" Height="75" Margin="0,0,10,0"
-                                    BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="4"
-                                    Cursor="Hand" MouseLeftButtonUp="Thumbnail_Click">
-                                <Image x:Name="PhotoThumbnail" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                            </Border>
-                            <StackPanel Grid.Column="1">
-                                <TextBlock x:Name="SelectedPhotoText" FontSize="13" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
-                                <TextBlock x:Name="SelectedGpsText" Margin="0,6,0,0" FontSize="13" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel></Border>
+                    </Border>
 
-                    <!-- GPS Card -->
-                    <Border Style="{StaticResource CardPanelGps}" Padding="0">
-                        <Expander x:Name="GpsExpander" IsExpanded="False" Padding="16,12">
-                            <Expander.Header><TextBlock x:Name="GpsExpanderHeader" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/></Expander.Header>
-                            <StackPanel Margin="0,8,0,0">
-                                <TextBlock x:Name="ManualInputHelpText" FontSize="12" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                                <TextBox x:Name="GpsInputTextBox" AcceptsReturn="True" MinHeight="48" TextWrapping="Wrap" FontSize="13"
-                                         Foreground="{DynamicResource TextSecondary}" GotFocus="GpsInputTextBox_GotFocus" LostFocus="GpsInputTextBox_LostFocus" TextChanged="GpsInputTextBox_TextChanged"/>
-                                <DockPanel Margin="0,6,0,0">
-                                    <Button x:Name="CoordinateSystemHelpButton" DockPanel.Dock="Right" Content="?" Width="28" Height="28" Padding="0" Margin="6,0,0,0" Click="CoordinateSystemHelpButton_Click"/>
-                                    <ComboBox x:Name="CoordinateSystemComboBox" Height="28" FontSize="13" SelectedIndex="0" SelectionChanged="CoordinateSystemComboBox_SelectionChanged">
-                                        <ComboBoxItem x:Name="Wgs84CoordinateItem" Tag="wgs84" Content="WGS-84"/>
-                                        <ComboBoxItem x:Name="Gcj02CoordinateItem" Tag="gcj02" Content="GCJ-02"/>
-                                        <ComboBoxItem x:Name="Bd09CoordinateItem" Tag="bd09" Content="BD-09"/>
-                                    </ComboBox>
+                    <Border Grid.Row="1" Style="{StaticResource CardPanelPlain}" Padding="12" Margin="0,0,0,10">
+                        <DockPanel>
+                            <TextBox x:Name="FilterSearchBox" DockPanel.Dock="Right" Width="220" MinHeight="30" Padding="10,5" FontSize="12"/>
+                            <WrapPanel>
+                                <Button Style="{StaticResource TagButton}" Content="全部" x:Name="FilterAllButton" Click="FilterAll_Click"/>
+                                <Button Style="{StaticResource TagButton}" Content="无 GPS" x:Name="FilterNoGpsButton" Click="FilterNoGps_Click"/>
+                                <Button Style="{StaticResource TagButton}" Content="有 GPS" x:Name="FilterHasGpsButton" Click="FilterHasGps_Click"/>
+                                <Button Style="{StaticResource TagButton}" Content="FUJIFILM" x:Name="FilterFujiButton" Click="FilterFuji_Click"/>
+                                <Button Style="{StaticResource TagButton}" Content="HUAWEI" x:Name="FilterHuaweiButton" Click="FilterHuawei_Click"/>
+                                <Button Style="{StaticResource TagButton}" Content="格式⚠" x:Name="FilterMismatchButton" Click="FilterMismatch_Click"/>
+                            </WrapPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <DataGrid Grid.Row="2" x:Name="PhotoGrid" ItemsSource="{Binding Photos}"
+                              AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="False"
+                              SelectionMode="Extended" CanUserReorderColumns="True" GridLinesVisibility="Horizontal"
+                              ColumnReordered="PhotoGrid_ColumnReordered" SelectionChanged="PhotoGrid_SelectionChanged"
+                              MouseDoubleClick="PhotoGrid_MouseDoubleClick" PreviewKeyDown="PhotoGrid_PreviewKeyDown"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Resources>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="Wrap"/>
+                                <Setter Property="Padding" Value="6,2"/>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn x:Name="UseColumn" Header="使用" Width="52" MinWidth="52">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center" Click="UseCheckBox_Click"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn x:Name="FileColumn" Header="文件" Binding="{Binding FileName}" IsReadOnly="True" Width="*" MinWidth="120"/>
+                            <DataGridTextColumn Header="日期" Binding="{Binding DateTakenDate}" IsReadOnly="True" Width="Auto" MinWidth="78"/>
+                            <DataGridTextColumn Header="时间" Binding="{Binding DateTakenTime}" IsReadOnly="True" Width="Auto" MinWidth="52"/>
+                            <DataGridTextColumn x:Name="DeviceColumn" Header="设备" Binding="{Binding CameraDisplay}" IsReadOnly="True" Width="Auto" MinWidth="90"/>
+                            <DataGridTextColumn x:Name="CoordinatesColumn" Header="坐标" Binding="{Binding GpsDisplay}" IsReadOnly="True" Width="*" MinWidth="120"/>
+                            <DataGridTemplateColumn x:Name="MapColumn" Header="Map" Width="50" MinWidth="50">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Map" Click="OpenPhotoMap_Click" Margin="0" Height="24" Padding="6,0"
+                                                FontSize="12" Background="Transparent" BorderThickness="0"
+                                                Foreground="{DynamicResource Accent}" Cursor="Hand"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="格式" Binding="{Binding FormatDisplay}" IsReadOnly="True" Width="Auto" MinWidth="50"/>
+                            <DataGridTextColumn Header="⚠" Binding="{Binding MismatchDisplay}" IsReadOnly="True" Width="30" MinWidth="30"/>
+                            <DataGridTextColumn x:Name="PathColumn" Header="路径" IsReadOnly="True" Width="*" MinWidth="140">
+                                <DataGridTextColumn.Binding><Binding Path="Path"/></DataGridTextColumn.Binding>
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="ToolTip" Value="{Binding Path}"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Row="3" Style="{StaticResource CardPanelPlain}" Padding="12,9" Margin="0,10,0,0">
+                        <WrapPanel>
+                            <TextBlock x:Name="StatsTotalText" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,22,0"/>
+                            <TextBlock x:Name="StatsGpsText" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,22,0"/>
+                            <TextBlock x:Name="StatsSelectedText" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
+                        </WrapPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Inspector and Tools -->
+                <ScrollViewer x:Name="ToolsScrollViewer" Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Style="{StaticResource CardPanel}">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,10">
+                                    <Button x:Name="OpenSelectedMapButton" Content="Map" DockPanel.Dock="Right" Height="28" Width="56" Padding="0" FontSize="12"/>
+                                    <TextBlock x:Name="SelectedPhotoGroup" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
                                 </DockPanel>
-                                <TextBlock x:Name="GpsPreviewText" Margin="0,6,0,0" FontSize="12" Foreground="{DynamicResource Success}" TextWrapping="Wrap"/>
-                                <Button x:Name="MapPickerButton" Content="Map 选点" Click="MapPickerButton_Click" Margin="0,6,0,0"/>
-                                <UniformGrid Columns="3" Margin="0,6,0,0">
-                                    <Button x:Name="ReferencePhotoButton" Content="参考其他" Click="ReferencePhotoButton_Click" Margin="0,0,4,0" Height="30" Padding="0" FontSize="12"/>
-                                    <Button x:Name="TimeRulesButton" Content="时间段" Click="TimeRulesButton_Click" Margin="2,0,2,0" Height="30" Padding="0" FontSize="12"/>
-                                    <Button x:Name="TrackMatchButton" Content="Track" Click="TrackMatchButton_Click" Margin="4,0,0,0" Height="30" Padding="0" FontSize="12"/>
-                                </UniformGrid>
-                                <Button x:Name="WriteButton" Style="{DynamicResource PrimaryButton}" Height="38" FontSize="14" Margin="0,6,0,0" Click="WriteButton_Click"/>
-                            </StackPanel>
-                        </Expander>
-                    </Border>
-
-                    <!-- Format Tools Card -->
-                    <Border Style="{StaticResource CardPanelFormat}" Padding="0">
-                        <Expander x:Name="FormatToolsExpander" IsExpanded="False" Padding="16,12">
-                            <Expander.Header><TextBlock x:Name="FormatToolsGroup" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/></Expander.Header>
-                            <StackPanel Margin="0,8,0,0">
-                                <TextBlock x:Name="MismatchStatsText" FontSize="12" Foreground="{DynamicResource Warning}" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                                <Button x:Name="FixExtensionsButton" Style="{DynamicResource PrimaryButtonFormat}" Click="FixExtensions_Click"/>
-                                <Separator Height="1" Margin="0,10"/>
-                                <TextBlock x:Name="ConvertFormatTitle" Text="目标格式" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
-                                <ComboBox x:Name="ConvertFormatComboBox" Margin="0,6,0,0" SelectedIndex="0" FontSize="13">
-                                    <ComboBoxItem Tag="jpg" Content="JPEG (.jpg)"/><ComboBoxItem Tag="png" Content="PNG (.png)"/>
-                                    <ComboBoxItem Tag="bmp" Content="BMP (.bmp)"/><ComboBoxItem Tag="gif" Content="GIF (.gif)"/>
-                                    <ComboBoxItem Tag="tiff" Content="TIFF (.tiff)"/>
-                                </ComboBox>
-                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                    <TextBlock x:Name="ConvertWriteModeLabel" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,4,0"/>
-                                    <ComboBox x:Name="ConvertWriteModeComboBox" SelectedIndex="2" FontSize="12" SelectionChanged="ConvertWriteModeComboBox_SelectionChanged">
-                                        <ComboBoxItem Tag="copy" Content="输出到新目录"/><ComboBoxItem Tag="backup" Content="原地写入 + Backup"/>
-                                        <ComboBoxItem Tag="direct" Content="直接写入原文件"/>
-                                    </ComboBox>
-                                </StackPanel>
-                                <Border x:Name="ConvertOutputDirContainer" Margin="0,6,0,0">
-                                    <DockPanel>
-                                        <Button x:Name="ConvertBrowseButton" Content="浏览" Height="30" Padding="8,0" Margin="6,0,0,0" Click="ChooseOutputDirectory_Click"/>
-                                        <TextBox x:Name="ConvertOutputTextBox" FontSize="12" MinHeight="30"/>
-                                    </DockPanel>
-                                </Border>
-                                <Button x:Name="ConvertFormatButton" Content="转换格式"
-                                        Style="{DynamicResource PrimaryButtonFormat}" Margin="0,8,0,0" Click="ConvertFormat_Click"/>
-                            </StackPanel>
-                        </Expander>
-                    </Border>
-
-                    <!-- Date Tools Card -->
-                    <Border Style="{StaticResource CardPanelDate}" Padding="0">
-                        <Expander x:Name="DateToolsExpander" IsExpanded="False" Padding="16,12">
-                            <Expander.Header><TextBlock x:Name="DateToolsGroup" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/></Expander.Header>
-                            <StackPanel Margin="0,8,0,0">
-                                <!-- Current info -->
-                                <TextBlock x:Name="DateInfoExif" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,2"/>
-                                <TextBlock x:Name="DateInfoFile" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
-                                <!-- Date Picker -->
-                                <Grid Margin="0,0,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="78"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                        <TextBlock x:Name="DateLabel" Text="拍摄日期" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
-                                        <DatePicker x:Name="DatePickerField" Height="32" FontSize="13"/>
-                                    </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="104" Height="78" Margin="0,0,12,0"
+                                            BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="8"
+                                            Background="{DynamicResource SurfaceSoft}" Cursor="Hand" MouseLeftButtonUp="Thumbnail_Click">
+                                        <Image x:Name="PhotoThumbnail" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="来源" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
-                                        <Button x:Name="DateRefButton" Content="参考" Height="32" Padding="8,0" FontSize="12" Click="DateRef_Click"/>
+                                        <TextBlock x:Name="SelectedPhotoText" FontSize="13" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="SelectedGpsText" Margin="0,8,0,0" FontSize="13" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Grid>
-                                <Grid Margin="0,0,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="76"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                        <TextBlock Text="时间" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
-                                        <TextBox x:Name="TimeInputBox" Width="72" Height="32" FontSize="14" Text="00:00"
-                                                 HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-                                    </StackPanel>
-                                    <Grid Grid.Column="1" VerticalAlignment="Bottom">
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource CardPanelGps}" Padding="0">
+                            <Expander x:Name="GpsExpander" IsExpanded="False" Padding="16,14">
+                                <Expander.Header><TextBlock x:Name="GpsExpanderHeader" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/></Expander.Header>
+                                <StackPanel Margin="0,10,0,0">
+                                    <TextBlock x:Name="ManualInputHelpText" FontSize="12" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                    <TextBox x:Name="GpsInputTextBox" AcceptsReturn="True" MinHeight="54" TextWrapping="Wrap" FontSize="13"
+                                             Foreground="{DynamicResource TextSecondary}" GotFocus="GpsInputTextBox_GotFocus" LostFocus="GpsInputTextBox_LostFocus" TextChanged="GpsInputTextBox_TextChanged"/>
+                                    <DockPanel Margin="0,8,0,0">
+                                        <Button x:Name="CoordinateSystemHelpButton" DockPanel.Dock="Right" Content="?" Width="30" Height="30" Padding="0" Margin="8,0,0,0" Click="CoordinateSystemHelpButton_Click"/>
+                                        <ComboBox x:Name="CoordinateSystemComboBox" Height="30" FontSize="13" SelectedIndex="0" SelectionChanged="CoordinateSystemComboBox_SelectionChanged">
+                                            <ComboBoxItem x:Name="Wgs84CoordinateItem" Tag="wgs84" Content="WGS-84"/>
+                                            <ComboBoxItem x:Name="Gcj02CoordinateItem" Tag="gcj02" Content="GCJ-02"/>
+                                            <ComboBoxItem x:Name="Bd09CoordinateItem" Tag="bd09" Content="BD-09"/>
+                                        </ComboBox>
+                                    </DockPanel>
+                                    <TextBlock x:Name="GpsPreviewText" Margin="0,8,0,0" FontSize="12" Foreground="{DynamicResource Success}" TextWrapping="Wrap"/>
+                                    <Button x:Name="MapPickerButton" Content="Map 选点" Click="MapPickerButton_Click" Margin="0,8,0,0"/>
+                                    <UniformGrid Columns="3" Margin="0,8,0,0">
+                                        <Button x:Name="ReferencePhotoButton" Content="参考其他" Click="ReferencePhotoButton_Click" Margin="0,0,4,0" Height="32" Padding="0" FontSize="12"/>
+                                        <Button x:Name="TimeRulesButton" Content="时间段" Click="TimeRulesButton_Click" Margin="2,0,2,0" Height="32" Padding="0" FontSize="12"/>
+                                        <Button x:Name="TrackMatchButton" Content="Track" Click="TrackMatchButton_Click" Margin="4,0,0,0" Height="32" Padding="0" FontSize="12"/>
+                                    </UniformGrid>
+                                    <Button x:Name="WriteButton" Style="{DynamicResource PrimaryButton}" Height="40" FontSize="14" Margin="0,8,0,0" Click="WriteButton_Click"/>
+                                </StackPanel>
+                            </Expander>
+                        </Border>
+
+                        <Border Style="{StaticResource CardPanelDate}" Padding="0">
+                            <Expander x:Name="DateToolsExpander" IsExpanded="False" Padding="16,14">
+                                <Expander.Header><TextBlock x:Name="DateToolsGroup" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/></Expander.Header>
+                                <StackPanel Margin="0,10,0,0">
+                                    <TextBlock x:Name="DateInfoExif" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,2"/>
+                                    <TextBlock x:Name="DateInfoFile" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,10"/>
+                                    <Grid Margin="0,0,0,8">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="78"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                            <TextBlock x:Name="DateLabel" Text="拍摄日期" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                                            <DatePicker x:Name="DatePickerField" Height="34" FontSize="13"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="来源" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                                            <Button x:Name="DateRefButton" Content="参考" Height="34" Padding="8,0" FontSize="12" Click="DateRef_Click"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="76"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Content="-H" Height="32" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeDownHour_Click"/>
-                                        <Button Grid.Column="1" Content="+H" Height="32" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeUpHour_Click"/>
-                                        <Button Grid.Column="2" Content="-M" Height="32" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeDownMin_Click"/>
-                                        <Button Grid.Column="3" Content="+M" Height="32" Padding="0" FontSize="12" Click="TimeUpMin_Click"/>
+                                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                            <TextBlock Text="时间" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                                            <TextBox x:Name="TimeInputBox" Width="72" Height="34" FontSize="14" Text="00:00"
+                                                     HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                        </StackPanel>
+                                        <Grid Grid.Column="1" VerticalAlignment="Bottom">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Content="-H" Height="34" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeDownHour_Click"/>
+                                            <Button Grid.Column="1" Content="+H" Height="34" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeUpHour_Click"/>
+                                            <Button Grid.Column="2" Content="-M" Height="34" Padding="0" FontSize="12" Margin="0,0,4,0" Click="TimeDownMin_Click"/>
+                                            <Button Grid.Column="3" Content="+M" Height="34" Padding="0" FontSize="12" Click="TimeUpMin_Click"/>
+                                        </Grid>
                                     </Grid>
-                                </Grid>
-                                <Button x:Name="WriteDateButton" Content="写入日期" Click="WriteDate_Click"
-                                        Height="30" FontSize="12" Margin="0,0,0,8"/>
-                                <Separator Height="1" Margin="0,2,0,8"/>
-                                <Button x:Name="DateCheckButton" Content="日期校对"
-                                        Style="{DynamicResource PrimaryButton}" Height="36" FontSize="13" Click="DateCheck_Click"/>
+                                    <Button x:Name="WriteDateButton" Content="写入日期" Click="WriteDate_Click"
+                                            Height="32" FontSize="12" Margin="0,0,0,8"/>
+                                    <Separator Height="1" Margin="0,2,0,8"/>
+                                    <Button x:Name="DateCheckButton" Content="日期校对"
+                                            Style="{DynamicResource PrimaryButton}" Height="38" FontSize="13" Click="DateCheck_Click"/>
+                                </StackPanel>
+                            </Expander>
+                        </Border>
+
+                        <Border Style="{StaticResource CardPanelFormat}" Padding="0">
+                            <Expander x:Name="FormatToolsExpander" IsExpanded="False" Padding="16,14">
+                                <Expander.Header><TextBlock x:Name="FormatToolsGroup" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/></Expander.Header>
+                                <StackPanel Margin="0,10,0,0">
+                                    <TextBlock x:Name="MismatchStatsText" FontSize="12" Foreground="{DynamicResource Warning}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                    <Button x:Name="FixExtensionsButton" Style="{DynamicResource PrimaryButtonFormat}" Click="FixExtensions_Click"/>
+                                    <Separator Height="1" Margin="0,12"/>
+                                    <TextBlock x:Name="ConvertFormatTitle" Text="目标格式" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <ComboBox x:Name="ConvertFormatComboBox" Margin="0,6,0,0" SelectedIndex="0" FontSize="13">
+                                        <ComboBoxItem Tag="jpg" Content="JPEG (.jpg)"/><ComboBoxItem Tag="png" Content="PNG (.png)"/>
+                                        <ComboBoxItem Tag="bmp" Content="BMP (.bmp)"/><ComboBoxItem Tag="gif" Content="GIF (.gif)"/>
+                                        <ComboBoxItem Tag="tiff" Content="TIFF (.tiff)"/>
+                                    </ComboBox>
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <TextBlock x:Name="ConvertWriteModeLabel" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,6,0"/>
+                                        <ComboBox x:Name="ConvertWriteModeComboBox" SelectedIndex="2" FontSize="12" SelectionChanged="ConvertWriteModeComboBox_SelectionChanged">
+                                            <ComboBoxItem Tag="copy" Content="输出到新目录"/><ComboBoxItem Tag="backup" Content="原地写入 + Backup"/>
+                                            <ComboBoxItem Tag="direct" Content="直接写入原文件"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <Border x:Name="ConvertOutputDirContainer" Margin="0,8,0,0">
+                                        <DockPanel>
+                                            <Button x:Name="ConvertBrowseButton" Content="浏览" Height="30" Padding="8,0" Margin="8,0,0,0" Click="ChooseOutputDirectory_Click"/>
+                                            <TextBox x:Name="ConvertOutputTextBox" FontSize="12" MinHeight="30"/>
+                                        </DockPanel>
+                                    </Border>
+                                    <Button x:Name="ConvertFormatButton" Content="转换格式"
+                                            Style="{DynamicResource PrimaryButtonFormat}" Margin="0,10,0,0" Click="ConvertFormat_Click"/>
+                                </StackPanel>
+                            </Expander>
+                        </Border>
+
+                        <Border x:Name="SettingsPanel" Style="{StaticResource CardPanelPlain}" Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="设置 Settings" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+                                <TextBlock Text="全局写入方式、输出目录、主题、语言和地图 Key 保持在顶部，方便随时确认。"
+                                           Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"/>
                             </StackPanel>
-                        </Expander>
-                    </Border>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
 
-            </StackPanel></ScrollViewer>
+            <!-- Status -->
+            <Border Grid.Row="2" Style="{StaticResource CardPanelPlain}" Padding="12,8" Margin="0,12,0,0">
+                <DockPanel>
+                    <TextBlock x:Name="StatusText" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                    <ProgressBar x:Name="WriteProgressBar" DockPanel.Dock="Right" Width="190" Height="10" Visibility="Collapsed" IsIndeterminate="False" Maximum="100" Minimum="0"/>
+                </DockPanel>
+            </Border>
+
+            <Border x:Name="ToastBorder" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,28"
+                    Background="{DynamicResource ToastBg}" CornerRadius="8" Padding="20,12" Visibility="Collapsed" IsHitTestVisible="False">
+                <TextBlock x:Name="ToastText" Foreground="{DynamicResource ToastText}" FontSize="14"/>
+            </Border>
         </Grid>
-
-        <!-- Status -->
-        <Border Grid.Row="2" Margin="0,10,0,0" Background="Transparent">
-            <DockPanel>
-                <TextBlock x:Name="StatusText" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
-                <ProgressBar x:Name="WriteProgressBar" DockPanel.Dock="Right" Width="180" Height="10" Visibility="Collapsed" IsIndeterminate="False" Maximum="100" Minimum="0" Foreground="#E54D42" Background="#F0F0F0"/>
-            </DockPanel>
-        </Border>
-        <!-- Toast -->
-        <Border x:Name="ToastBorder" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40"
-                Background="{DynamicResource ToastBg}" CornerRadius="6" Padding="20,12" Visibility="Collapsed" IsHitTestVisible="False">
-            <TextBlock x:Name="ToastText" Foreground="{DynamicResource ToastText}" FontSize="14"/>
-        </Border>
     </Grid>
 </Window>

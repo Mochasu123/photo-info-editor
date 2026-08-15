@@ -48,6 +48,7 @@ public partial class MapPickerWindow : Window
         SelectedCoordinate = initialCoordinate;
         UpdateCoordinateText();
         Loaded += MapPickerWindow_Loaded;
+        Closed += MapPickerWindow_Closed;
     }
 
     public GpsCoordinate? SelectedCoordinate { get; private set; }
@@ -79,9 +80,11 @@ public partial class MapPickerWindow : Window
         {
             using var document = JsonDocument.Parse(e.WebMessageAsJson);
             var root = document.RootElement;
-            if (!root.TryGetProperty("type", out var type) || type.GetString() != "picked")
+            if (!root.TryGetProperty("type", out var type) ||
+                type.ValueKind != System.Text.Json.JsonValueKind.String ||
+                type.GetString() != "picked")
             {
-                if (type.GetString() == "searchResults")
+                if (type.ValueKind == System.Text.Json.JsonValueKind.String && type.GetString() == "searchResults")
                 {
                     ApplySearchResults(root);
                 }
@@ -607,6 +610,12 @@ public partial class MapPickerWindow : Window
 </body>
 </html>
 """;
+    }
+
+    private void MapPickerWindow_Closed(object? sender, EventArgs e)
+    {
+        try { MapWebView.Dispose(); }
+        catch { /* best effort */ }
     }
 
     private enum MapProvider

@@ -3,15 +3,20 @@
 
     <!-- Warm paper tones inspired by Notion and Kindle -->
     <SolidColorBrush x:Key="Surface" Color="#F8F4EB"/>
+    <SolidColorBrush x:Key="SurfaceSoft" Color="#F4EDDF"/>
     <SolidColorBrush x:Key="Background" Color="#F0EBE0"/>
     <SolidColorBrush x:Key="TextPrimary" Color="#3D3529"/>
     <SolidColorBrush x:Key="TextSecondary" Color="#7A6E5E"/>
+    <SolidColorBrush x:Key="TextMuted" Color="#A89A86"/>
     <SolidColorBrush x:Key="Border" Color="#DCD0BE"/>
     <SolidColorBrush x:Key="Accent" Color="#C4843A"/>
     <SolidColorBrush x:Key="AccentHover" Color="#A8732C"/>
+    <SolidColorBrush x:Key="AccentSoft" Color="#F0E4D1"/>
     <SolidColorBrush x:Key="Divider" Color="#E8DECE"/>
     <SolidColorBrush x:Key="Success" Color="#6B8E23"/>
     <SolidColorBrush x:Key="Warning" Color="#CC7A2E"/>
+    <SolidColorBrush x:Key="Danger" Color="#B91C1C"/>
+    <SolidColorBrush x:Key="DangerSoft" Color="#F3D8D0"/>
 
     <SolidColorBrush x:Key="RowHover" Color="#EDE4D5"/>
     <SolidColorBrush x:Key="RowSelected" Color="#C4843A"/>
@@ -35,4 +40,14 @@
     <SolidColorBrush x:Key="CardAccentFormat" Color="#6B8E23"/>
     <SolidColorBrush x:Key="CardAccentFormatHover" Color="#5A7A1E"/>
     <SolidColorBrush x:Key="CardAccentDate" Color="#8E6B9E"/>
+
+    <!-- Modern additions -->
+    <SolidColorBrush x:Key="OnAccent" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="FocusBrush" Color="#C4843A"/>
+    <SolidColorBrush x:Key="InputBg" Color="#FCFAF4"/>
+    <SolidColorBrush x:Key="SurfaceAlt" Color="#F0EADF"/>
+    <SolidColorBrush x:Key="ChipBg" Color="#F8F4EB"/>
+    <SolidColorBrush x:Key="ChipText" Color="#7A6E5E"/>
+    <SolidColorBrush x:Key="SidebarBg" Color="#F5F0E7"/>
+    <SolidColorBrush x:Key="OverlayBg" Color="#663D3529"/>
 </ResourceDictionary>

@@ -48,7 +48,14 @@ public sealed class AppSettingsService
 
     public void Save(AppSettings settings)
     {
+        try
+        {
         Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
         File.WriteAllText(SettingsPath, JsonSerializer.Serialize(settings, JsonOptions));
+        }
+        catch
+        {
+            // Settings are best-effort and must never crash the application.
+        }
     }
 }

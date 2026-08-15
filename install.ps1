@@ -1,4 +1,4 @@
-robocopy "C:\Workspace\photo-location-editor\dist\publish" "C:\tool\Photo Info Editor" /E /NFL /NDL
+robocopy "C:\Workspace\CodeApply\photo-location-editor\dist\publish" "C:\tool\Photo Info Editor" /E /NFL /NDL
 Write-Host "Copied files"
 
 $ws = New-Object -ComObject WScript.Shell

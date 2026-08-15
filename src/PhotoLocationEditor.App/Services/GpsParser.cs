@@ -74,7 +74,8 @@ public static partial class GpsParser
             var prefix = match.Groups["prefix"].Value;
             var suffix = match.Groups["suffix"].Value;
             var direction = string.IsNullOrWhiteSpace(prefix) ? suffix : prefix;
-            var value = double.Parse(match.Groups["value"].Value, CultureInfo.InvariantCulture);
+            var raw = match.Groups["pv"].Success ? match.Groups["pv"].Value : match.Groups["sv"].Value;
+            var value = double.Parse(raw, CultureInfo.InvariantCulture);
             value = ApplyDirection(value, direction);
 
             if (direction.Equals("N", StringComparison.OrdinalIgnoreCase) ||
@@ -165,7 +166,9 @@ public static partial class GpsParser
             .Replace('”', '"');
     }
 
-    [GeneratedRegex(@"(?<prefix>[NSEW])?\s*(?<value>[-+]?\d+(?:\.\d+)?)\s*(?<suffix>[NSEW])", RegexOptions.IgnoreCase)]
+    // A direction letter must be attached to its value (prefix `N33.5` or suffix `33.5S`),
+    // so a letter before the NEXT value (`S33.5 W70.5`) is never consumed as a suffix.
+    [GeneratedRegex(@"(?:(?<prefix>[NSEW])\s*(?<pv>[-+]?\d+(?:\.\d+)?))|(?:(?<sv>[-+]?\d+(?:\.\d+)?)\s*(?<suffix>[NSEW]))", RegexOptions.IgnoreCase)]
     private static partial Regex DirectionalDecimalRegex();
 
     [GeneratedRegex(@"(?<deg>\d+(?:\.\d+)?)\D+(?<min>\d+(?:\.\d+)?)?\D*(?<sec>\d+(?:\.\d+)?)?\D*(?<dir>[NSEW])", RegexOptions.IgnoreCase)]

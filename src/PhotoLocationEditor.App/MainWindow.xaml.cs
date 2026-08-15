@@ -764,6 +764,38 @@ public partial class MainWindow : Window
     private PhotoItem? GetFocusedPhoto() => PhotoGrid.SelectedItem as PhotoItem ?? Photos.FirstOrDefault();
     private IEnumerable<PhotoItem> GetHighlightedPhotos() => PhotoGrid.SelectedItems.OfType<PhotoItem>().ToArray();
 
+    // ---- Shell navigation ----
+    private void NavPhotos_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveNav(NavPhotosButton);
+        PhotoGrid.Focus();
+        if (PhotoGrid.SelectedItem is not null) PhotoGrid.ScrollIntoView(PhotoGrid.SelectedItem);
+    }
+
+    private void NavLocation_Click(object sender, RoutedEventArgs e) { SetActiveNav(NavLocationButton); OpenToolSection(GpsExpander); }
+    private void NavDate_Click(object sender, RoutedEventArgs e) { SetActiveNav(NavDateButton); OpenToolSection(DateToolsExpander); }
+    private void NavFormat_Click(object sender, RoutedEventArgs e) { SetActiveNav(NavFormatButton); OpenToolSection(FormatToolsExpander); }
+    private void NavSettings_Click(object sender, RoutedEventArgs e) { SetActiveNav(NavSettingsButton); ScrollToolIntoView(SettingsPanel); }
+
+    private void SetActiveNav(System.Windows.Controls.Button active)
+    {
+        var inactiveStyle = (Style)FindResource("NavButton");
+        var activeStyle = (Style)FindResource("NavButtonActive");
+        foreach (var button in new[] { NavPhotosButton, NavLocationButton, NavDateButton, NavFormatButton, NavSettingsButton })
+            button.Style = button == active ? activeStyle : inactiveStyle;
+    }
+
+    private void OpenToolSection(Expander expander)
+    {
+        expander.IsExpanded = true;
+        ScrollToolIntoView(expander);
+    }
+
+    private void ScrollToolIntoView(FrameworkElement element)
+    {
+        element.Dispatcher.InvokeAsync(() => element.BringIntoView());
+    }
+
     private void OpenMapForPhoto(PhotoItem photo) { PhotoGrid.SelectedItem = photo; photo.IsSelected = true; var init = photo.Latitude.HasValue && photo.Longitude.HasValue ? new GpsCoordinate(photo.Latitude.Value, photo.Longitude.Value, photo.Altitude) : null; OpenMapEditor(init, init is null ? null : T("ExistingGpsNotice")); }
 
     private void ToggleBusy(bool busy, string? status = null)

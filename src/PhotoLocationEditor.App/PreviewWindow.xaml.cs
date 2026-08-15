@@ -9,19 +9,26 @@ namespace PhotoLocationEditor.App;
 public partial class PreviewWindow : Window
 {
     private readonly IReadOnlyList<PhotoItem> _photos;
+    private readonly bool _isEnglish;
     private int _index;
 
-    public PreviewWindow(IReadOnlyList<PhotoItem> photos, int startIndex)
+    public PreviewWindow(IReadOnlyList<PhotoItem> photos, int startIndex, bool isEnglish = false)
     {
         _photos = photos;
+        _isEnglish = isEnglish;
         _index = startIndex;
+        ;
+        ;
         InitializeComponent();
+        PrevButton.Content = _isEnglish ? "Previous" : "上一张";
+        NextButton.Content = _isEnglish ? "Next" : "下一张";
         LoadImage();
     }
 
     private void LoadImage()
     {
         var photo = _photos[_index];
+        FullImage.Source = null;
         Title = photo.FileName;
         InfoText.Text = $"{photo.FileName}  {photo.CameraDisplay}  ({_index + 1}/{_photos.Count})";
         PrevButton.IsEnabled = _index > 0;
@@ -32,13 +39,14 @@ public partial class PreviewWindow : Window
             var src = new BitmapImage();
             src.BeginInit();
             src.CacheOption = BitmapCacheOption.OnLoad;
+            src.DecodePixelWidth = 2400;
             src.UriSource = new Uri(photo.Path);
             src.EndInit();
             FullImage.Source = src;
         }
         catch
         {
-            InfoText.Text += " (无法加载)";
+            InfoText.Text += _isEnglish ? " (failed to load)" : " (无法加载)";
         }
     }
 

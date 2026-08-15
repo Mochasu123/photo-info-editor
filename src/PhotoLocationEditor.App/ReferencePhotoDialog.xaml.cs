@@ -10,17 +10,19 @@ public partial class ReferencePhotoDialog : Window
 {
     private readonly ExifToolService _exifTool;
     private readonly AppSettings _settings;
+    private readonly bool _isEnglish;
     private readonly AppSettingsService _settingsService = new();
     private TabItem? _draggedTab;
 
-    public ReferencePhotoDialog(IReadOnlyList<PhotoItem> importedPhotos, ExifToolService exifTool, AppSettings settings)
+    public ReferencePhotoDialog(IReadOnlyList<PhotoItem> importedPhotos, ExifToolService exifTool, AppSettings settings, bool isEnglish = false)
     {
         _exifTool = exifTool;
         _settings = settings;
+        _isEnglish = isEnglish;
         InitializeComponent();
 
         // Restore tab order
-        if (_settings.ReferencePhotoTabOrder.Count == 2)
+        if (_settings.ReferencePhotoTabOrder is not null && _settings.ReferencePhotoTabOrder.Count == 2)
         {
             var a0 = MainTabControl.Items[0] as TabItem;
             var a1 = MainTabControl.Items[1] as TabItem;
@@ -31,7 +33,9 @@ public partial class ReferencePhotoDialog : Window
                 MainTabControl.Items.Add(_settings.ReferencePhotoTabOrder[0] == 0 ? a1 : a0);
             }
         }
-        MainTabControl.SelectedIndex = _settings.ReferencePhotoTabIndex;
+        MainTabControl.SelectedIndex = _settings.ReferencePhotoTabIndex >= 0 && _settings.ReferencePhotoTabIndex < MainTabControl.Items.Count
+            ? _settings.ReferencePhotoTabIndex
+            : 0;
 
         var hasGps = importedPhotos.Where(p => p.Latitude.HasValue && p.Longitude.HasValue).ToArray();
         if (hasGps.Length == 0)
@@ -51,7 +55,7 @@ public partial class ReferencePhotoDialog : Window
     public GpsCoordinate? Result { get; private set; }
     public string? ResultFileName { get; private set; }
 
-    private string Tk(string key) => _settings.LastLanguage == "en" ? En(key) : Zh(key);
+    private string Tk(string key) => _isEnglish ? En(key) : Zh(key);
 
     private void ApplyLanguage()
     {
@@ -95,9 +99,11 @@ public partial class ReferencePhotoDialog : Window
         foreach (TabItem item in MainTabControl.Items)
         {
             if (item == _draggedTab) continue;
+              var header = item.Header as FrameworkElement;
+              var headerHeight = header?.ActualHeight ?? 30;
             var headerPos = item.TranslatePoint(new(0, 0), MainTabControl);
             if (pos.X > 0 && pos.X < MainTabControl.ActualWidth &&
-                pos.Y >= headerPos.Y && pos.Y < headerPos.Y + item.ActualHeight)
+                pos.Y >= headerPos.Y && pos.Y < headerPos.Y + headerHeight)
             {
                 e.Effects = System.Windows.DragDropEffects.Move;
                 return;
@@ -114,13 +120,19 @@ public partial class ReferencePhotoDialog : Window
         foreach (TabItem item in MainTabControl.Items)
         {
             if (item == _draggedTab) continue;
+              var header = item.Header as FrameworkElement;
+              var headerHeight = header?.ActualHeight ?? 30;
             var headerPos = item.TranslatePoint(new(0, 0), MainTabControl);
-            if (pos.Y >= headerPos.Y + item.ActualHeight / 2) targetIndex++;
-            else break;
+            if (pos.X >= headerPos.X && pos.X <= headerPos.X + item.ActualWidth &&
+                pos.Y >= headerPos.Y && pos.Y <= headerPos.Y + headerHeight)
+            {
+                targetIndex = MainTabControl.Items.IndexOf(item);
+            }
+            ;
         }
-        var sourceIndex = MainTabControl.Items.IndexOf(_draggedTab);
+        ;
         MainTabControl.Items.Remove(_draggedTab);
-        if (targetIndex > sourceIndex) targetIndex--;
+        ;
         MainTabControl.Items.Insert(targetIndex, _draggedTab);
         MainTabControl.SelectedItem = _draggedTab;
         _draggedTab = null;
