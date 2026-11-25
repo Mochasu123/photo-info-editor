@@ -10,10 +10,9 @@
     <ApplicationIcon>appicon.ico</ApplicationIcon>
     <AssemblyName>PhotoInfoEditor</AssemblyName>
     <RootNamespace>PhotoLocationEditor.App</RootNamespace>
-    <BaseIntermediateOutputPath>obj\modern\</BaseIntermediateOutputPath>
-    <Version>0.3.0</Version>
-    <FileVersion>0.3.0.0</FileVersion>
-    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,8 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- WinForms is only used through the `WinForms` alias; drop its implicit using so
-         WPF types (TextBox, KeyEventArgs, DataFormats, ...) are never ambiguous. -->
+    <!-- WinForms is only used through System.Drawing for image encoding; remove implicit Forms usings. -->
     <Using Remove="System.Windows.Forms" />
   </ItemGroup>
 
@@ -36,9 +34,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- V2 window and services replace the original implementations -->
+    <!-- Legacy WPF windows/dialogs/services replaced by the Hybrid WebView2 Studio & Services -->
     <Page Remove="MainWindow.xaml" />
+    <Page Remove="DateCheckDialog.xaml" />
+    <Page Remove="MapPickerWindow.xaml" />
+    <Page Remove="PreviewWindow.xaml" />
+    <Page Remove="ReferencePhotoDialog.xaml" />
+    <Page Remove="Themes\*.xaml" />
     <Compile Remove="MainWindow.xaml.cs" />
+    <Compile Remove="DateCheckDialog.xaml.cs" />
+    <Compile Remove="DateCheckItem.cs" />
+    <Compile Remove="MapPickerWindow.xaml.cs" />
+    <Compile Remove="PreviewWindow.xaml.cs" />
+    <Compile Remove="ReferencePhotoDialog.xaml.cs" />
     <Compile Remove="Services\ImageConversionService.cs" />
     <Compile Remove="Services\ExifToolService.cs" />
     <Compile Remove="Models\WriteMode.cs" />
@@ -46,6 +54,7 @@
 
   <ItemGroup>
     <Content Include="Tools\**\*.*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <Content Include="WebUI\**\*.*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
 
 </Project>

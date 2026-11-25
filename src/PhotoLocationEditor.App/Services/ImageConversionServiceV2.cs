@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using Encoder = System.Drawing.Imaging.Encoder;
 using EncoderParameter = System.Drawing.Imaging.EncoderParameter;
@@ -10,6 +12,7 @@ namespace PhotoLocationEditor.App.Services;
 
 public sealed class ImageConversionService
 {
+    private const int ExifOrientationTagId = 0x0112;
     private readonly ExifToolService _exifTool;
 
     public ImageConversionService(ExifToolService exifTool)
@@ -26,166 +29,168 @@ public sealed class ImageConversionService
         ImageFormat.Tiff => [ImageFormat.Jpeg, ImageFormat.Png, ImageFormat.Bmp, ImageFormat.Gif],
         ImageFormat.Heic => [ImageFormat.Jpeg, ImageFormat.Png],
         ImageFormat.WebP => [ImageFormat.Jpeg, ImageFormat.Png],
+        ImageFormat.Avif => [ImageFormat.Jpeg, ImageFormat.Png],
         _ => []
     };
 
-    public async Task<IReadOnlyList<string>> ConvertAsync(
+    public Task<IReadOnlyList<string>> ConvertAsync(
         IReadOnlyList<PhotoItem> selectedPhotos,
         ImageFormat targetFormat,
         WriteMode mode,
         string? outputDirectory,
         IProgress<WriteProgress>? progress = null,
+        CancellationToken cancellationToken = default) =>
+        ConvertAsync(selectedPhotos, new ConversionOptions(targetFormat, mode, outputDirectory), progress, cancellationToken);
+
+    public async Task<IReadOnlyList<string>> ConvertAsync(
+        IReadOnlyList<PhotoItem> selectedPhotos,
+        ConversionOptions options,
+        IProgress<WriteProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        var results = new List<string>();
+        var results = new ConcurrentBag<string>();
+        var total = selectedPhotos.Count;
+        var completed = 0;
 
-        for (var index = 0; index < selectedPhotos.Count; index++)
+        if (options.WriteMode == WriteMode.CopyToOutputDirectory)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(options.OutputDirectory))
+                throw new InvalidOperationException("Choose an output directory first.");
+            Directory.CreateDirectory(options.OutputDirectory);
+        }
 
-            var photo = selectedPhotos[index];
+        // Pre-compute deterministic output paths sequentially to avoid GetUniquePath race conditions
+        var jobs = new List<(PhotoItem Photo, ImageFormat Source, string FinalPath, bool DirectSameExt)>();
+        foreach (var photo in selectedPhotos)
+        {
             var source = photo.DetectedFormat != ImageFormat.Unknown
                 ? photo.DetectedFormat
                 : FormatDetector.Detect(photo.Path);
 
             var convertible = GetConvertibleFormats(source);
-            if (convertible.Length == 0 || !convertible.Contains(targetFormat))
+            var allowResizeSameFormat = options.MaxDimension.HasValue && source == options.TargetFormat;
+            if (!allowResizeSameFormat && (convertible.Length == 0 || !convertible.Contains(options.TargetFormat)))
             {
                 photo.Status = $"Cannot convert: {FormatDetector.GetFormatLabel(source)}";
                 continue;
             }
 
-            var targetExt = FormatDetector.GetStandardExtension(targetFormat);
+            var targetExt = FormatDetector.GetStandardExtension(options.TargetFormat);
             var outputName = Path.ChangeExtension(photo.FileName, targetExt.TrimStart('.'));
-            string? finalPath = null;
 
-            progress?.Report(new WriteProgress(
-                $"Converting {photo.FileName} → {targetExt} ({index + 1}/{selectedPhotos.Count})...",
-                (index + 1) * 100.0 / selectedPhotos.Count));
-
-            switch (mode)
+            if (options.WriteMode == WriteMode.CopyToOutputDirectory)
             {
-                case WriteMode.CopyToOutputDirectory:
+                var finalPath = GetUniquePath(Path.Combine(options.OutputDirectory!, outputName));
+                jobs.Add((photo, source, finalPath, false));
+            }
+            else
+            {
+                if (source == options.TargetFormat && !options.MaxDimension.HasValue)
                 {
-                    if (string.IsNullOrWhiteSpace(outputDirectory))
-                        throw new InvalidOperationException("Choose an output directory first.");
-
-                    Directory.CreateDirectory(outputDirectory);
-                    finalPath = GetUniquePath(Path.Combine(outputDirectory, outputName));
-                    await ConvertOneWithMetadataAsync(photo.Path, source, finalPath, targetFormat, cancellationToken);
-                    photo.Status = $"Converted: {Path.GetFileName(finalPath)}";
-                    results.Add(finalPath);
-                    break;
+                    photo.Status = "Same format, skipped";
+                    continue;
                 }
 
-                case WriteMode.DirectInPlace:
-                {
-                    // Never delete the original before the converted file is fully written.
-                    var sameExtension = string.Equals(
-                        Path.GetExtension(photo.Path),
-                        Path.GetExtension(outputName),
-                        StringComparison.OrdinalIgnoreCase);
-                    finalPath = sameExtension
-                        ? photo.Path
-                        : GetUniquePath(Path.Combine(photo.Directory, outputName));
-
-                    if (source == targetFormat)
-                    {
-                        // Already the requested format: copy-mode handles copies, direct mode is a no-op.
-                        photo.Status = "Same format, skipped";
-                        break;
-                    }
-
-                    var tempPath = Path.Combine(
-                        photo.Directory,
-                        $".{photo.FileName}.{Guid.NewGuid():N}.tmp{targetExt}");
-                    try
-                    {
-                        await ConvertOneWithMetadataAsync(photo.Path, source, tempPath, targetFormat, cancellationToken);
-
-                        if (sameExtension)
-                        {
-                            File.Replace(tempPath, finalPath, null, ignoreMetadataErrors: true);
-                        }
-                        else
-                        {
-                            var oldPath = Path.Combine(
-                                photo.Directory,
-                                $".{photo.FileName}.{Guid.NewGuid():N}.old");
-                            File.Move(photo.Path, oldPath);
-                            try
-                            {
-                                File.Move(tempPath, finalPath);
-                            }
-                            catch
-                            {
-                                try { File.Move(oldPath, photo.Path); } catch { /* rollback best effort */ }
-                                throw;
-                            }
-
-                            TryDeleteFile(oldPath);
-                            photo.UpdatePath(finalPath);
-                            photo.SetDetectedFormat(targetFormat);
-                        }
-
-                        photo.Status = $"Converted: {Path.GetFileName(finalPath)}";
-                        results.Add(finalPath);
-                    }
-                    finally
-                    {
-                        TryDeleteFile(tempPath);
-                    }
-
-                    break;
-                }
-
-                default:
-                    throw new InvalidOperationException($"Unsupported write mode: {mode}");
+                var sameExt = string.Equals(Path.GetExtension(photo.Path), Path.GetExtension(outputName), StringComparison.OrdinalIgnoreCase);
+                var finalPath = sameExt ? photo.Path : GetUniquePath(Path.Combine(photo.Directory, outputName));
+                jobs.Add((photo, source, finalPath, sameExt));
             }
         }
 
-        return results;
+        var dop = Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
+        await Parallel.ForEachAsync(jobs, new ParallelOptions
+        {
+            MaxDegreeOfParallelism = dop,
+            CancellationToken = cancellationToken
+        }, async (job, ct) =>
+        {
+            var (photo, source, finalPath, sameExt) = job;
+            if (options.WriteMode == WriteMode.CopyToOutputDirectory)
+            {
+                await ConvertOneWithMetadataAsync(photo.Path, source, finalPath, options, ct).ConfigureAwait(false);
+                photo.Status = $"Converted: {Path.GetFileName(finalPath)}";
+                results.Add(finalPath);
+            }
+            else
+            {
+                var targetExt = FormatDetector.GetStandardExtension(options.TargetFormat);
+                var tempPath = Path.Combine(photo.Directory, $".{photo.FileName}.{Guid.NewGuid():N}.tmp{targetExt}");
+                try
+                {
+                    await ConvertOneWithMetadataAsync(photo.Path, source, tempPath, options, ct).ConfigureAwait(false);
+                    if (sameExt)
+                    {
+                        File.Replace(tempPath, finalPath, null, ignoreMetadataErrors: true);
+                    }
+                    else
+                    {
+                        var oldPath = Path.Combine(photo.Directory, $".{photo.FileName}.{Guid.NewGuid():N}.old");
+                        File.Move(photo.Path, oldPath);
+                        try
+                        {
+                            File.Move(tempPath, finalPath);
+                        }
+                        catch
+                        {
+                            try { File.Move(oldPath, photo.Path); } catch { }
+                            throw;
+                        }
+                        TryDeleteFile(oldPath);
+                        photo.UpdatePath(finalPath);
+                        photo.SetDetectedFormat(options.TargetFormat);
+                    }
+                    photo.Status = $"Converted: {Path.GetFileName(finalPath)}";
+                    results.Add(finalPath);
+                }
+                finally
+                {
+                    TryDeleteFile(tempPath);
+                }
+            }
+
+            var done = Interlocked.Increment(ref completed);
+            progress?.Report(new WriteProgress(
+                $"Converted {done}/{jobs.Count} ({Path.GetFileName(finalPath)})",
+                done * 100.0 / Math.Max(1, total)));
+        }).ConfigureAwait(false);
+
+        return results.ToArray();
     }
 
     private async Task ConvertOneWithMetadataAsync(
         string sourcePath,
         ImageFormat sourceFormat,
         string destinationPath,
-        ImageFormat targetFormat,
+        ConversionOptions options,
         CancellationToken cancellationToken)
     {
-        if (sourceFormat == targetFormat)
+        if (sourceFormat == options.TargetFormat && !options.MaxDimension.HasValue)
         {
             await Task.Run(() =>
             {
                 File.Copy(sourcePath, destinationPath, overwrite: false);
                 PreserveFileTimes(sourcePath, destinationPath);
-            }, cancellationToken);
+            }, cancellationToken).ConfigureAwait(false);
             return;
         }
 
-        // Decode/encode off the UI thread.
-        await Task.Run(
-            () => ConvertPixels(sourcePath, destinationPath, targetFormat),
-            cancellationToken);
+        await Task.Run(() => ConvertPixels(sourcePath, destinationPath, options), cancellationToken).ConfigureAwait(false);
 
-        // System.Drawing does not keep EXIF/GPS; copy metadata back with ExifTool.
         try
         {
-            await _exifTool.CopyMetadataFromAsync(sourcePath, destinationPath, cancellationToken);
+            await _exifTool.CopyMetadataFromAsync(sourcePath, destinationPath, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // The image is still valid; only metadata copying failed.
             System.Diagnostics.Debug.WriteLine($"Metadata copy failed for {destinationPath}: {ex.Message}");
         }
 
         PreserveFileTimes(sourcePath, destinationPath);
     }
 
-    private static void ConvertPixels(string sourcePath, string destinationPath, ImageFormat targetFormat)
+    private static void ConvertPixels(string sourcePath, string destinationPath, ConversionOptions options)
     {
-        var imgFormat = targetFormat switch
+        var imgFormat = options.TargetFormat switch
         {
             ImageFormat.Jpeg => System.Drawing.Imaging.ImageFormat.Jpeg,
             ImageFormat.Png => System.Drawing.Imaging.ImageFormat.Png,
@@ -195,21 +200,75 @@ public sealed class ImageConversionService
             _ => System.Drawing.Imaging.ImageFormat.Jpeg
         };
 
-        using var image = Image.FromFile(sourcePath);
-        if (targetFormat == ImageFormat.Jpeg && imgFormat == System.Drawing.Imaging.ImageFormat.Jpeg)
+        using var loaded = Image.FromFile(sourcePath);
+        ApplyExifOrientation(loaded);
+
+        Image targetImage = loaded;
+        Bitmap? resizedBitmap = null;
+        if (options.MaxDimension is int maxDim && maxDim > 0 && (loaded.Width > maxDim || loaded.Height > maxDim))
         {
-            var encoder = ImageCodecInfo.GetImageEncoders()
-                .FirstOrDefault(codec => codec.FormatID == System.Drawing.Imaging.ImageFormat.Jpeg.Guid);
-            if (encoder is not null)
-            {
-                using var parameters = new EncoderParameters(1);
-                parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 92L);
-                image.Save(destinationPath, encoder, parameters);
-                return;
-            }
+            var scale = Math.Min((double)maxDim / loaded.Width, (double)maxDim / loaded.Height);
+            var w = Math.Max(1, (int)Math.Round(loaded.Width * scale));
+            var h = Math.Max(1, (int)Math.Round(loaded.Height * scale));
+            resizedBitmap = new Bitmap(w, h);
+            using var g = Graphics.FromImage(resizedBitmap);
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            g.SmoothingMode = SmoothingMode.HighQuality;
+            g.DrawImage(loaded, 0, 0, w, h);
+            targetImage = resizedBitmap;
         }
 
-        image.Save(destinationPath, imgFormat);
+        try
+        {
+            if (options.TargetFormat == ImageFormat.Jpeg)
+            {
+                var encoder = ImageCodecInfo.GetImageEncoders()
+                    .FirstOrDefault(codec => codec.FormatID == System.Drawing.Imaging.ImageFormat.Jpeg.Guid);
+                if (encoder is not null)
+                {
+                    using var parameters = new EncoderParameters(1);
+                    parameters.Param[0] = new EncoderParameter(Encoder.Quality, Math.Clamp(options.JpegQuality, 40, 100));
+                    targetImage.Save(destinationPath, encoder, parameters);
+                    return;
+                }
+            }
+
+            targetImage.Save(destinationPath, imgFormat);
+        }
+        finally
+        {
+            resizedBitmap?.Dispose();
+        }
+    }
+
+    private static void ApplyExifOrientation(Image image)
+    {
+        if (!image.PropertyIdList.Contains(ExifOrientationTagId))
+            return;
+
+        var prop = image.GetPropertyItem(ExifOrientationTagId);
+        if (prop?.Value is not { Length: >= 2 })
+            return;
+
+        var orientation = BitConverter.ToUInt16(prop.Value, 0);
+        var flip = orientation switch
+        {
+            2 => RotateFlipType.RotateNoneFlipX,
+            3 => RotateFlipType.Rotate180FlipNone,
+            4 => RotateFlipType.Rotate180FlipX,
+            5 => RotateFlipType.Rotate90FlipX,
+            6 => RotateFlipType.Rotate90FlipNone,
+            7 => RotateFlipType.Rotate270FlipX,
+            8 => RotateFlipType.Rotate270FlipNone,
+            _ => RotateFlipType.RotateNoneFlipNone
+        };
+
+        if (flip != RotateFlipType.RotateNoneFlipNone)
+        {
+            image.RotateFlip(flip);
+            image.RemovePropertyItem(ExifOrientationTagId);
+        }
     }
 
     private static void PreserveFileTimes(string sourcePath, string destinationPath)
@@ -219,10 +278,7 @@ public sealed class ImageConversionService
             File.SetCreationTime(destinationPath, File.GetCreationTime(sourcePath));
             File.SetLastWriteTime(destinationPath, File.GetLastWriteTime(sourcePath));
         }
-        catch
-        {
-            // best effort
-        }
+        catch { }
     }
 
     private static string GetUniquePath(string path)
@@ -244,6 +300,6 @@ public sealed class ImageConversionService
     private static void TryDeleteFile(string path)
     {
         try { File.Delete(path); }
-        catch { /* best effort */ }
+        catch { }
     }
 }

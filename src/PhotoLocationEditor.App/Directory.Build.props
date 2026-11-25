@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'PhotoLocationEditor.App.Modern'">
+    <BaseIntermediateOutputPath>obj\modern\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

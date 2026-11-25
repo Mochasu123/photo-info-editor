@@ -1,0 +1,234 @@
+/* ==========================================================================
+   PHOTO INFO EDITOR — 6 CURATED AESTHETIC WORLDS & STUDIO TOKENS
+   Fuses Lumina Glassmorphism + Sequoia Vibrancy + Archival Washi Paper
+   ========================================================================== */
+
+:root,
+[data-theme="obsidian"] {
+  color-scheme: dark;
+  --html-bg: #090b10;
+  --surface: rgba(18, 22, 32, 0.72);
+  --surface-solid: #141822;
+  --surface-elevated: rgba(24, 30, 44, 0.86);
+  --surface-hover: rgba(255, 255, 255, 0.065);
+  --surface-active: rgba(156, 196, 255, 0.16);
+  --sidebar-bg: rgba(12, 15, 22, 0.78);
+  --bar-bg: rgba(10, 12, 18, 0.80);
+  --input-bg: rgba(9, 12, 18, 0.72);
+  --text-primary: #eef2f8;
+  --text-secondary: #a9b5c7;
+  --text-muted: #6c788c;
+  --accent: #8ab8ff;
+  --accent-strong: #5897ff;
+  --accent-soft: rgba(138, 184, 255, 0.18);
+  --on-accent: #07111f;
+  --glass-border: rgba(210, 224, 245, 0.15);
+  --glass-border-strong: rgba(210, 224, 245, 0.28);
+  --glass-top: rgba(235, 243, 255, 0.22);
+  --sheen-rgb: 215, 230, 255;
+  --shadow-rgb: 0, 2, 8;
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.16);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.16);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.16);
+  --card-radius: 12px;
+  --base-grad:
+    radial-gradient(circle 60vmax at 52% 16%, rgba(120, 156, 210, 0.14) 0%, transparent 64%),
+    radial-gradient(ellipse 92% 90% at 50% 48%, #181f2c 0%, #0d1118 58%, #07090e 100%);
+  --shader-opacity: 0.76;
+  --shader-blend: lighten;
+}
+
+[data-theme="bleu"] {
+  color-scheme: dark;
+  --html-bg: #091629;
+  --surface: rgba(14, 32, 58, 0.62);
+  --surface-solid: #102544;
+  --surface-elevated: rgba(18, 42, 74, 0.86);
+  --surface-hover: rgba(186, 224, 250, 0.08);
+  --surface-active: rgba(143, 211, 244, 0.20);
+  --sidebar-bg: rgba(9, 22, 42, 0.78);
+  --bar-bg: rgba(8, 20, 38, 0.82);
+  --input-bg: rgba(7, 18, 35, 0.66);
+  --text-primary: #edf5fc;
+  --text-secondary: #b6cfe4;
+  --text-muted: #7697b6;
+  --accent: #8fd3f4;
+  --accent-strong: #5bc0ee;
+  --accent-soft: rgba(143, 211, 244, 0.20);
+  --on-accent: #07192d;
+  --glass-border: rgba(186, 224, 250, 0.20);
+  --glass-border-strong: rgba(186, 224, 250, 0.34);
+  --glass-top: rgba(226, 244, 255, 0.25);
+  --sheen-rgb: 204, 236, 255;
+  --shadow-rgb: 3, 10, 24;
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.16);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.16);
+  --danger: #fb7185;
+  --danger-soft: rgba(251, 113, 133, 0.16);
+  --card-radius: 16px;
+  --base-grad:
+    radial-gradient(circle 50vmax at 78% 18%, rgba(162, 212, 245, 0.20) 0%, transparent 68%),
+    radial-gradient(ellipse 92% 86% at 50% 42%, #2f5b87 0%, #153156 54%, #091629 100%);
+  --shader-opacity: 0.50;
+  --shader-blend: soft-light;
+}
+
+[data-theme="aurora"] {
+  color-scheme: dark;
+  --html-bg: #0b0718;
+  --surface: rgba(22, 14, 46, 0.60);
+  --surface-solid: #180f33;
+  --surface-elevated: rgba(30, 20, 60, 0.88);
+  --surface-hover: rgba(206, 178, 255, 0.08);
+  --surface-active: rgba(138, 243, 214, 0.18);
+  --sidebar-bg: rgba(15, 9, 34, 0.80);
+  --bar-bg: rgba(13, 8, 29, 0.82);
+  --input-bg: rgba(11, 7, 25, 0.68);
+  --text-primary: #f3eeff;
+  --text-secondary: #c6b7e8;
+  --text-muted: #8b7bb3;
+  --accent: #8af3d6;
+  --accent-strong: #5ae8c4;
+  --accent-soft: rgba(138, 243, 214, 0.18);
+  --on-accent: #071e18;
+  --glass-border: rgba(206, 178, 255, 0.22);
+  --glass-border-strong: rgba(138, 243, 214, 0.42);
+  --glass-top: rgba(154, 246, 226, 0.28);
+  --sheen-rgb: 178, 245, 232;
+  --shadow-rgb: 7, 3, 20;
+  --success: #6ee7b7;
+  --success-soft: rgba(110, 231, 183, 0.16);
+  --warn: #fcd34d;
+  --warn-soft: rgba(252, 211, 77, 0.16);
+  --danger: #f472b6;
+  --danger-soft: rgba(244, 114, 182, 0.18);
+  --card-radius: 16px;
+  --base-grad:
+    radial-gradient(ellipse 80% 55% at 50% 10%, rgba(130, 92, 214, 0.24) 0%, transparent 72%),
+    radial-gradient(ellipse 95% 88% at 50% 52%, #241448 0%, #130b2a 56%, #080514 100%);
+  --shader-opacity: 0.78;
+  --shader-blend: screen;
+}
+
+[data-theme="amber"] {
+  color-scheme: dark;
+  --html-bg: #160b06;
+  --surface: rgba(42, 20, 10, 0.62);
+  --surface-solid: #2b140a;
+  --surface-elevated: rgba(54, 26, 14, 0.88);
+  --surface-hover: rgba(248, 202, 134, 0.08);
+  --surface-active: rgba(246, 190, 107, 0.22);
+  --sidebar-bg: rgba(28, 13, 7, 0.82);
+  --bar-bg: rgba(24, 11, 6, 0.84);
+  --input-bg: rgba(22, 10, 5, 0.70);
+  --text-primary: #fdf4e6;
+  --text-secondary: #dfc29d;
+  --text-muted: #a6825b;
+  --accent: #f6be6b;
+  --accent-strong: #efa23d;
+  --accent-soft: rgba(246, 190, 107, 0.22);
+  --on-accent: #221004;
+  --glass-border: rgba(248, 202, 134, 0.22);
+  --glass-border-strong: rgba(248, 202, 134, 0.40);
+  --glass-top: rgba(255, 232, 186, 0.26);
+  --sheen-rgb: 255, 214, 142;
+  --shadow-rgb: 16, 6, 2;
+  --success: #86efac;
+  --success-soft: rgba(134, 239, 172, 0.16);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.20);
+  --danger: #fb7185;
+  --danger-soft: rgba(251, 113, 133, 0.18);
+  --card-radius: 14px;
+  --base-grad:
+    radial-gradient(circle 55vmax at 24% 20%, rgba(242, 152, 68, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 90% 88% at 52% 48%, #5e2c13 0%, #311509 56%, #140904 100%);
+  --shader-opacity: 0.70;
+  --shader-blend: screen;
+}
+
+[data-theme="dune"] {
+  color-scheme: dark;
+  --html-bg: #19130f;
+  --surface: rgba(34, 24, 18, 0.66);
+  --surface-solid: #261c15;
+  --surface-elevated: rgba(45, 33, 24, 0.90);
+  --surface-hover: rgba(240, 195, 109, 0.08);
+  --surface-active: rgba(240, 195, 109, 0.22);
+  --sidebar-bg: rgba(24, 17, 13, 0.82);
+  --bar-bg: rgba(22, 16, 12, 0.84);
+  --input-bg: rgba(20, 14, 11, 0.72);
+  --text-primary: #f8efe2;
+  --text-secondary: #d9c3a5;
+  --text-muted: #9e8568;
+  --accent: #f0c36d;
+  --accent-strong: #dfb052;
+  --accent-soft: rgba(240, 195, 109, 0.20);
+  --on-accent: #1d1409;
+  --glass-border: rgba(240, 195, 109, 0.24);
+  --glass-border-strong: rgba(240, 195, 109, 0.44);
+  --glass-top: rgba(250, 219, 156, 0.28);
+  --sheen-rgb: 248, 214, 146;
+  --shadow-rgb: 14, 8, 4;
+  --success: #6ee7b7;
+  --success-soft: rgba(110, 231, 183, 0.16);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.18);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.18);
+  --card-radius: 10px;
+  --base-grad:
+    radial-gradient(circle 55vmax at 78% 18%, rgba(240, 184, 96, 0.22) 0%, transparent 62%),
+    radial-gradient(ellipse 92% 88% at 44% 56%, #563a27 0%, #2a201e 52%, #151318 100%);
+  --shader-opacity: 0.72;
+  --shader-blend: soft-light;
+}
+
+[data-theme="sakura"] {
+  color-scheme: light;
+  --html-bg: #f6f3ec;
+  --surface: rgba(255, 252, 249, 0.80);
+  --surface-solid: #ffffff;
+  --surface-elevated: rgba(255, 255, 255, 0.94);
+  --surface-hover: rgba(199, 91, 114, 0.07);
+  --surface-active: rgba(199, 91, 114, 0.14);
+  --sidebar-bg: rgba(248, 243, 236, 0.86);
+  --bar-bg: rgba(250, 246, 240, 0.86);
+  --input-bg: rgba(255, 255, 255, 0.88);
+  --text-primary: #1d1d1f;
+  --text-secondary: #5c4b50;
+  --text-muted: #8c787e;
+  --accent: #c75b72;
+  --accent-strong: #ad435a;
+  --accent-soft: rgba(199, 91, 114, 0.14);
+  --on-accent: #ffffff;
+  --glass-border: rgba(168, 112, 124, 0.24);
+  --glass-border-strong: rgba(199, 91, 114, 0.45);
+  --glass-top: rgba(255, 255, 255, 0.94);
+  --sheen-rgb: 255, 224, 230;
+  --shadow-rgb: 92, 46, 58;
+  --success: #1f7a4c;
+  --success-soft: rgba(31, 122, 76, 0.13);
+  --warn: #b45309;
+  --warn-soft: rgba(180, 83, 9, 0.13);
+  --danger: #c81e1e;
+  --danger-soft: rgba(200, 30, 30, 0.12);
+  --card-radius: 14px;
+  --base-grad:
+    radial-gradient(circle 55vmax at 80% 16%, rgba(244, 184, 196, 0.36) 0%, transparent 65%),
+    radial-gradient(ellipse 92% 90% at 48% 48%, #fbf7f3 0%, #f3e7e3 58%, #ebd5d8 100%);
+  --shader-opacity: 0.56;
+  --shader-blend: multiply;
+}
+
+:root {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
+  --font-serif: "Source Han Serif SC", "Noto Serif SC", "Songti SC", Georgia, serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+}

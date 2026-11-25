@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="obsidian">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Info Editor · Lumina Studio</title>
+  <link rel="icon" type="image/png" href="./icon.png" />
+  <link rel="stylesheet" href="./vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="./styles/tokens.css" />
+  <link rel="stylesheet" href="./styles/studio.css" />
+</head>
+<body>
+  <div class="backdrop-base" aria-hidden="true"></div>
+  <canvas class="backdrop-canvas" id="shaderCanvas" aria-hidden="true"></canvas>
+  <canvas class="ambient-particles" id="ambientCanvas" aria-hidden="true"></canvas>
+
+  <div id="app">
+    <!-- Top Frameless Studio Titlebar -->
+    <header class="titlebar" id="titlebar">
+      <button class="win-btn" id="btnToggleSidebar" title="Toggle Sidebar"></button>
+      <div class="brand-cluster">
+        <div class="brand-mark" id="brandMark"></div>
+        <span class="brand-title" data-i18n="appTitle">Photo Info Editor</span>
+        <span class="brand-sub mono" data-i18n="appSub">Lumina Studio</span>
+      </div>
+
+      <div class="titlebar-sep"></div>
+
+      <div class="segmented" id="viewSeg" role="tablist">
+        <button class="seg-btn active" data-view="grid"></button>
+        <button class="seg-btn" data-view="table"></button>
+        <button class="seg-btn" data-view="atlas"></button>
+      </div>
+
+      <div class="segmented" id="writeModeSeg">
+        <button class="seg-btn" data-wmode="copy"></button>
+        <button class="seg-btn active mode-direct" data-wmode="direct"></button>
+      </div>
+
+      <div class="titlebar-spacer" id="dragRegion"></div>
+
+      <div class="theme-dots" id="themeDots"></div>
+
+      <button class="tb-pill" id="btnPureDarkroom"></button>
+      <button class="tb-pill" id="btnUndo" disabled></button>
+      <button class="tb-pill mono" id="btnLang">中 / EN</button>
+      <button class="tb-pill" id="btnSettings"></button>
+
+      <div class="win-controls" id="winControls" hidden>
+        <button class="win-btn" id="btnWinMin" aria-label="Minimize"></button>
+        <button class="win-btn" id="btnWinMax" aria-label="Maximize"></button>
+        <button class="win-btn close" id="btnWinClose" aria-label="Close"></button>
+      </div>
+    </header>
+
+    <!-- Main 3-Pane Studio -->
+    <div class="workspace">
+      <!-- Left Vibrancy Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sb-scroll">
+          <section class="sb-group">
+            <div class="sb-title"><span data-i18n="importMedia">媒体导入</span></div>
+            <div class="sb-import-grid">
+              <button class="btn primary sm" id="btnAddFiles"></button>
+              <button class="btn sm" id="btnAddFolder"></button>
+            </div>
+            <label class="sb-check-row">
+              <input type="checkbox" id="chkSubfolders" checked />
+              <span data-i18n="includeSubfolders">包含子文件夹</span>
+            </label>
+          </section>
+
+          <section class="sb-group">
+            <div class="sb-title"><span data-i18n="smartFilters">智能筛选</span></div>
+            <div id="filterList" class="sb-group"></div>
+          </section>
+
+          <section class="sb-group" id="brandGroup" hidden>
+            <div class="sb-title"><span data-i18n="cameraBrands">相机品牌</span></div>
+            <div id="brandList" class="sb-group"></div>
+          </section>
+
+          <section class="sb-group">
+            <div class="sb-title">
+              <span data-i18n="savedPlaces">常用地点</span>
+              <button class="btn sm" id="btnSavePin" style="height:20px;padding:0 6px;font-size:10.5px;"></button>
+            </div>
+            <div id="savedPinsList" class="sb-group"></div>
+          </section>
+        </div>
+
+        <footer class="sb-foot">
+          <div class="daemon-badge" id="daemonBadge">
+            <span class="daemon-dot"></span>
+            <span id="daemonBadgeText">ExifTool Ready</span>
+          </div>
+          <span data-i18n="dropHint">支持拖入照片、RAW、视频或文件夹</span>
+        </footer>
+      </aside>
+
+      <!-- Center Tri-View Stage -->
+      <main class="stage-main">
+        <div class="stage-toolbar">
+          <div class="search-box">
+            <span id="searchIconSlot"></span>
+            <input id="searchInput" type="text" placeholder="搜索..." />
+            <span class="kbd-hint mono">Ctrl+F</span>
+          </div>
+
+          <select class="select" id="sortSelect" style="width:auto;height:30px;padding:0 8px;font-size:12px;">
+            <option value="dateDesc"></option>
+            <option value="dateAsc"></option>
+            <option value="nameAsc"></option>
+            <option value="camera"></option>
+          </select>
+
+          <div class="toolbar-group" id="gridControls">
+            <input type="range" id="thumbSizeRange" min="160" max="340" step="10" value="230" style="width:78px;accent-color:var(--accent);" />
+            <button class="btn sm" id="btnFitMode">Cover</button>
+          </div>
+
+          <div class="toolbar-group" style="margin-left:auto;">
+            <button class="btn sm" id="btnSelAll"></button>
+            <button class="btn sm" id="btnSelNone"></button>
+            <button class="btn sm" id="btnSelInvert"></button>
+            <button class="btn sm" id="btnRemoveSel"></button>
+            <button class="btn sm danger" id="btnClearAll"></button>
+          </div>
+        </div>
+
+        <div class="stage-body" id="stageBody">
+          <!-- Empty State -->
+          <div class="empty-stage" id="emptyStage" hidden>
+            <div class="empty-card">
+              <div class="empty-icon" id="emptyIconSlot"></div>
+              <h2 data-i18n="emptyTitle">将照片、RAW 或视频拖入暗房画布</h2>
+              <p data-i18n="emptyDesc"></p>
+              <div class="empty-actions">
+                <button class="btn primary lg" id="btnEmptyFiles"></button>
+                <button class="btn lg" id="btnEmptyFolder"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 1: Virtualized Contact Sheet Grid -->
+          <div class="grid-scroll" id="gridView">
+            <div class="grid-spacer" id="gridSpacer">
+              <div class="grid-window" id="gridWindow"></div>
+            </div>
+          </div>
+
+          <!-- View 2: Telemetry Table -->
+          <div class="table-wrap" id="tableView" hidden>
+            <table class="telemetry-table">
+              <thead>
+                <tr>
+                  <th style="width:30px;"></th>
+                  <th style="width:44px;"></th>
+                  <th data-i18n="tblFile">文件</th>
+                  <th data-i18n="tblDate">拍摄时间</th>
+                  <th data-i18n="tblGear">设备</th>
+                  <th data-i18n="tblExp">曝光</th>
+                  <th data-i18n="tblGps">GPS 坐标</th>
+                  <th data-i18n="tblSolar">天光</th>
+                  <th data-i18n="tblFmt">格式</th>
+                  <th data-i18n="tblStatus">状态</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+
+          <!-- View 3: Spatial Atlas -->
+          <div class="atlas-view" id="atlasView" hidden>
+            <div class="atlas-hud-top">
+              <div class="atlas-search-panel" style="position:relative;">
+                <input id="atlasSearchInput" type="text" placeholder="搜索地点或地标..." />
+                <button class="btn sm primary" id="btnAtlasSearch"></button>
+                <div class="atlas-search-results" id="atlasSearchResults" hidden></div>
+              </div>
+              <select class="select" id="atlasLayerSelect" style="width:auto;height:32px;background:var(--surface-elevated);">
+                <option value="standard" data-i18n="layerStandard">标准地图</option>
+                <option value="topo" data-i18n="layerTopo">地形等高线</option>
+                <option value="satellite" data-i18n="layerSatellite">卫星影像</option>
+              </select>
+              <label class="tb-pill" style="background:var(--surface-elevated);">
+                <input type="checkbox" id="chkAtlasTrack" checked />
+                <span data-i18n="atlasShowTrack">显示足迹轨迹</span>
+              </label>
+              <button class="tb-pill" id="btnAtlasFit" style="background:var(--surface-elevated);">Fit All</button>
+            </div>
+
+            <div id="atlasMap"></div>
+
+            <div class="atlas-hud-bottom">
+              <div class="atlas-coord-card">
+                <div>
+                  <div class="mono" id="atlasCoordReadout" style="font-size:12.5px;font-weight:650;">点击地图选取坐标</div>
+                  <div id="atlasPlaceReadout" style="font-size:11px;color:var(--text-secondary);">支持高德 / OSM 坐标实时换算</div>
+                </div>
+                <button class="btn sm" id="btnAtlasSavePin"></button>
+                <button class="btn sm" id="btnAtlasUseCoord"></button>
+                <button class="btn sm primary" id="btnAtlasApplySel"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right Contextual Inspector Dock -->
+      <aside class="inspector">
+        <div class="inspector-scroll">
+          <!-- Optical Photo Card -->
+          <section class="panel-card" id="inspectorPhotoCard">
+            <div class="hero-preview-row">
+              <div class="inspector-thumb" id="inspThumbBox">
+                <img id="inspThumbImg" alt="" hidden />
+                <span class="inspector-thumb-hint mono">Space</span>
+              </div>
+              <div style="min-width:0;display:grid;gap:4px;">
+                <div class="meta-title" id="inspTitle" data-i18n="noSelection">选择一张照片查看详细参数</div>
+                <div class="meta-sub" id="inspSub"></div>
+                <div class="meta-sub mono" id="inspGpsLine"></div>
+              </div>
+            </div>
+
+            <div class="telemetry-pills" id="inspPills"></div>
+
+            <div class="solar-strip" id="inspSolarStrip" hidden>
+              <span style="display:inline-flex;align-items:center;gap:6px;">
+                <span class="solar-dot" id="inspSolarDot"></span>
+                <strong id="inspSolarPhase"></strong>
+              </span>
+              <span class="mono" id="inspSolarData" style="color:var(--text-secondary);"></span>
+            </div>
+
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn sm" id="btnCopyMeta"></button>
+              <button class="btn sm" id="btnPasteMeta" disabled></button>
+              <button class="btn sm" id="btnRevealFile"></button>
+              <button class="btn sm" id="btnOpenLoupe"></button>
+            </div>
+          </section>
+
+          <!-- Action Studio Tabs -->
+          <div class="segmented" id="inspTabs" style="width:100%;display:grid;grid-template-columns:1fr 1fr 1fr;">
+            <button class="seg-btn active" data-tab="gps" style="justify-content:center;"></button>
+            <button class="seg-btn" data-tab="date" style="justify-content:center;"></button>
+            <button class="seg-btn" data-tab="format" style="justify-content:center;"></button>
+          </div>
+
+          <!-- Tab 1: GPS Location Studio -->
+          <section class="panel-card" id="paneGps">
+            <div>
+              <label class="field-label" data-i18n="gpsInputLabel"></label>
+              <textarea class="textarea mono" id="gpsInput"></textarea>
+            </div>
+            <div>
+              <label class="field-label" data-i18n="coordSysLabel"></label>
+              <select class="select" id="coordSysSelect">
+                <option value="wgs84">WGS-84 (GPS / EXIF / OSM / Google)</option>
+                <option value="gcj02">GCJ-02 (高德 / 腾讯 / 国内 Apple)</option>
+                <option value="bd09">BD-09 (百度地图)</option>
+              </select>
+            </div>
+            <div class="preview-box mono" id="gpsPreviewBox">等待输入有效坐标...</div>
+            <div class="row-3">
+              <button class="btn sm" id="btnPickOnMap"></button>
+              <button class="btn sm" id="btnRefPhoto"></button>
+              <button class="btn sm" id="btnImportGpx"></button>
+            </div>
+            <button class="btn primary lg" id="btnWriteGps" disabled></button>
+            <div class="divider"></div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button class="btn sm danger" id="btnClearGps" style="flex:1;"></button>
+              <select class="select" id="exportFormatSelect" style="width:94px;height:26px;padding:0 6px;font-size:11.5px;">
+                <option value="gpx">GPX</option>
+                <option value="geojson">GeoJSON</option>
+                <option value="csv">CSV</option>
+              </select>
+              <button class="btn sm" id="btnExportFootprint"></button>
+            </div>
+          </section>
+
+          <!-- Tab 2: Chronos Date Studio -->
+          <section class="panel-card" id="paneDate" hidden>
+            <button class="btn primary lg" id="btnSmartDiagnose"></button>
+            <div class="divider"></div>
+            <div class="field-label" data-i18n="dateShiftTitle">时区 / 时间偏移微调</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              <button class="btn sm quick-shift" data-sec="-28800">-8h</button>
+              <button class="btn sm quick-shift" data-sec="-3600">-1h</button>
+              <button class="btn sm quick-shift" data-sec="3600">+1h</button>
+              <button class="btn sm quick-shift" data-sec="28800">+8h</button>
+              <button class="btn sm quick-shift" data-sec="-86400">-1d</button>
+              <button class="btn sm quick-shift" data-sec="86400">+1d</button>
+            </div>
+            <div class="row-4">
+              <div><label class="field-label" data-i18n="unitDay">±天</label><input class="input mono" id="shiftDays" type="number" value="0" /></div>
+              <div><label class="field-label" data-i18n="unitHour">±时</label><input class="input mono" id="shiftHours" type="number" value="0" /></div>
+              <div><label class="field-label" data-i18n="unitMin">±分</label><input class="input mono" id="shiftMins" type="number" value="0" /></div>
+              <div><label class="field-label" data-i18n="unitSec">±秒</label><input class="input mono" id="shiftSecs" type="number" value="0" /></div>
+            </div>
+            <div class="preview-box mono" id="shiftPreviewBox" style="font-size:11px;">—</div>
+            <button class="btn" id="btnApplyShift"></button>
+
+            <div class="divider"></div>
+            <div class="field-label" data-i18n="dateExactTitle">指定时间与序列递增</div>
+            <div style="display:grid;grid-template-columns:1fr 96px;gap:6px;">
+              <input class="input mono" id="dateExactInput" type="text" placeholder="2025:10:18 17:42:00" style="font-size:11.5px;padding:6px 7px;" />
+              <div style="display:flex;align-items:center;gap:4px;">
+                <span style="font-size:10.5px;color:var(--text-muted);white-space:nowrap;" data-i18n="stepSec">步进(s)</span>
+                <input class="input mono" id="seqStepInput" type="number" value="2" style="padding:6px 5px;font-size:11.5px;" />
+              </div>
+            </div>
+            <label class="sb-check-row" style="padding:0;">
+              <input type="checkbox" id="chkSyncFileTimes" />
+              <span data-i18n="syncFileTime">同步修改文件创建与修改时间</span>
+            </label>
+            <div class="row-2">
+              <button class="btn" id="btnWriteExactDate"></button>
+              <button class="btn" id="btnWriteSeqDate"></button>
+            </div>
+          </section>
+
+          <!-- Tab 3: Format, Camera & Privacy Studio -->
+          <section class="panel-card" id="paneFormat" hidden>
+            <div class="field-label" data-i18n="extMismatchTitle">真实格式与后缀检测</div>
+            <div class="preview-box" id="mismatchSummaryBox"></div>
+            <button class="btn warn" id="btnFixExtensions"></button>
+
+            <div class="divider"></div>
+            <div class="field-label" data-i18n="convertTitle">批量格式转换与缩放</div>
+            <div class="row-2">
+              <div>
+                <label class="field-label" data-i18n="targetFmt"></label>
+                <select class="select" id="convertTargetSelect">
+                  <option value="jpg">JPEG (.jpg)</option>
+                  <option value="png">PNG (.png)</option>
+                  <option value="tiff">TIFF (.tiff)</option>
+                  <option value="bmp">BMP (.bmp)</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" data-i18n="maxDim"></label>
+                <select class="select" id="maxDimSelect">
+                  <option value="0" data-i18n="dimOriginal">保持原始尺寸</option>
+                  <option value="4096">4096 px (4K+)</option>
+                  <option value="2560">2560 px (2.5K)</option>
+                  <option value="1920">1920 px (FHD)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+                <span data-i18n="jpegQuality">JPEG 质量</span>
+                <span class="mono" id="jpegQualityVal">92%</span>
+              </div>
+              <input type="range" id="jpegQualityRange" min="50" max="100" value="92" style="width:100%;accent-color:var(--accent);" />
+            </div>
+            <button class="btn primary" id="btnConvertFormat"></button>
+
+            <div class="divider"></div>
+            <div class="field-label" data-i18n="cameraEditTitle">相机型号与版权署名</div>
+            <div class="row-2">
+              <input class="input" id="camMakeInput" placeholder="Make (如 FUJIFILM)" />
+              <input class="input" id="camModelInput" placeholder="Model (如 X-T5)" />
+            </div>
+            <input class="input" id="camLensInput" placeholder="LensModel (镜头型号)" />
+            <div class="row-2">
+              <input class="input" id="camArtistInput" placeholder="Artist (作者)" />
+              <input class="input" id="camCopyrightInput" placeholder="Copyright (版权)" />
+            </div>
+            <button class="btn" id="btnWriteCameraInfo"></button>
+
+            <div class="divider"></div>
+            <div class="field-label" data-i18n="privacyTitle">隐私净空器</div>
+            <button class="btn sm" id="btnStripGps"></button>
+            <button class="btn sm warn" id="btnStripSocial"></button>
+            <button class="btn sm danger" id="btnStripFull"></button>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Bottom Telemetry Status Bar -->
+    <footer class="statusbar">
+      <span class="mono" id="statsSummary">Total 0</span>
+      <span class="status-msg" id="statusMessage">Ready</span>
+      <div class="progress-wrap" id="progressWrap" hidden>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <button class="btn sm danger" id="btnCancelBusy" style="height:21px;padding:0 7px;font-size:10.5px;">Cancel</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Full-Screen Darkroom Loupe -->
+  <div class="loupe-overlay" id="loupeOverlay" hidden>
+    <div class="loupe-canvas-area">
+      <div class="loupe-topbar">
+        <span class="mono" id="loupeTitle" style="font-size:13px;font-weight:600;"></span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="tb-pill" id="btnLoupeMatte" data-i18n="loupeMatte">画廊白框</button>
+          <button class="tb-pill active mono" id="btnLoupeTags">EXIF</button>
+          <button class="tb-pill mono" id="btnLoupeZoom">100%</button>
+          <button class="tb-pill" id="btnLoupeClose">ESC</button>
+        </div>
+      </div>
+      <div class="loupe-viewport">
+        <div class="loupe-frame" id="loupeFrame">
+          <img id="loupeImg" alt="" />
+          <div class="loupe-art-caption mono">
+            <span id="loupeArtLeft"></span>
+            <span id="loupeArtRight"></span>
+          </div>
+        </div>
+      </div>
+      <button class="loupe-nav-btn loupe-nav-prev" id="loupePrev"></button>
+      <button class="loupe-nav-btn loupe-nav-next" id="loupeNext"></button>
+    </div>
+    <aside class="loupe-tags-pane">
+      <div class="modal-head">
+        <h3 style="font-size:13px;" data-i18n="loupeTagsTitle">EXIF / XMP 全标签</h3>
+        <input class="input" id="loupeTagSearch" placeholder="过滤标签..." style="width:150px;padding:4px 8px;font-size:11.5px;" />
+      </div>
+      <div class="loupe-tags-list mono" id="loupeTagsList"></div>
+    </aside>
+  </div>
+
+  <!-- Smart Date Diagnosis Modal -->
+  <div class="modal-backdrop" id="diagModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>智能时间诊断 2.0（EXIF · 文件名毫秒时间戳 · 文件系统时间）</h3>
+        <button class="btn sm" id="btnDiagClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="preview-box" id="diagSummary"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn sm" id="btnDiagSelectActionable">仅勾选可修复项</button>
+          <button class="btn sm" id="btnDiagSelectAll">全选</button>
+        </div>
+        <div id="diagList" style="display:grid;gap:6px;max-height:360px;overflow-y:auto;"></div>
+      </div>
+      <div class="modal-foot">
+        <label class="sb-check-row" style="margin-right:auto;"><input type="checkbox" id="chkDiagSyncFiles" /> 同步文件创建/修改时间</label>
+        <button class="btn" id="btnDiagCancel">取消</button>
+        <button class="btn primary" id="btnDiagApply">写入选中修复</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GPX Track Match Modal -->
+  <div class="modal-backdrop" id="gpxModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>GPX 轨迹时间插值匹配</h3>
+        <button class="btn sm" id="btnGpxClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="preview-box" id="gpxSummary"></div>
+        <div id="gpxMatchList" style="display:grid;gap:6px;max-height:320px;overflow-y:auto;"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="btnGpxCancel">取消</button>
+        <button class="btn primary" id="btnGpxApply">批量写入匹配坐标</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reference Photo Modal -->
+  <div class="modal-backdrop" id="refModal" hidden>
+    <div class="modal-card" style="width:min(560px,100%);">
+      <div class="modal-head">
+        <h3>从参考照片吸取坐标与时间</h3>
+        <button class="btn sm" id="btnRefClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <button class="btn primary" id="btnRefPickLocal">从磁盘选择一张参考照片...</button>
+        <div class="field-label">或从当前工作区已有 GPS 的照片选取：</div>
+        <div id="refLoadedList" style="display:grid;gap:6px;max-height:280px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop" id="settingsModal" hidden>
+    <div class="modal-card" style="width:min(600px,100%);">
+      <div class="modal-head">
+        <h3 data-i18n="settings">设置</h3>
+        <button class="btn sm" id="btnSetClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="row-2">
+          <div>
+            <label class="field-label">默认写入策略</label>
+            <select class="select" id="setWriteMode">
+              <option value="0">安全副本（输出到新目录）</option>
+              <option value="2">原位直写（支持 Ctrl+Z 撤销）</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">地图引擎偏好</label>
+            <select class="select" id="setMapProvider">
+              <option value="osm">OpenStreetMap / Esri 卫星（免 Key）</option>
+              <option value="amap">高德地图 2.0（需配置 Key）</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">安全副本默认输出目录</label>
+          <div style="display:flex;gap:8px;">
+            <input class="input mono" id="setOutputDir" placeholder="选择输出目录..." />
+            <button class="btn" id="btnSetBrowseOut">浏览...</button>
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="field-label">高德 Web JS Key</label>
+            <input class="input mono" id="setAmapKey" placeholder="AMap JS Key" />
+          </div>
+          <div>
+            <label class="field-label">高德安全密钥 (securityJsCode)</label>
+            <input class="input mono" id="setAmapSec" placeholder="Security JS Code" />
+          </div>
+        </div>
+        <label class="sb-check-row">
+          <input type="checkbox" id="setSkipConfirm" />
+          <span>单步快捷操作跳过二次确认弹窗（原位写入仍可 Ctrl+Z 撤销）</span>
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="btnSetCancel">取消</button>
+        <button class="btn primary" id="btnSetSave">保存设置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Drag Drop Curtain -->
+  <div class="drop-curtain" id="dropCurtain" hidden>
+    <div style="text-align:center;">
+      <h2 style="font-size:20px;margin-bottom:6px;">松手导入到 Photo Info Editor</h2>
+      <p style="font-size:13px;color:rgba(255,255,255,0.75);">支持图片、RAW 与视频文件批量导入</p>
+    </div>
+  </div>
+
+  <!-- Toast Stack -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script src="./vendor/leaflet/leaflet.js"></script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

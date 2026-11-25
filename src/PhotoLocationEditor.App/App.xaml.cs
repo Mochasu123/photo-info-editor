@@ -1,22 +1,44 @@
+using System.IO;
 using System.Windows;
+using PhotoLocationEditor.App.Services;
 
 namespace PhotoLocationEditor.App;
 
 public partial class App : System.Windows.Application
 {
-    public static readonly string[] ThemeNames = ["light", "sepia", "dark"];
-    public static readonly string[] ThemeLabels = ["晨光 Light", "薄暮 Sepia", "暗夜 Dark"];
-
-    public static void SetTheme(string name)
+    protected override async void OnStartup(StartupEventArgs e)
     {
-        var merged = ((App)System.Windows.Application.Current).Resources.MergedDictionaries;
-        var index = name switch { "sepia" => 1, "dark" => 2, _ => 0 };
-        var uri = new System.Uri($"Themes/{ThemeNames[index]}.xaml", System.UriKind.Relative);
+        base.OnStartup(e);
 
-        if (merged.Count > 0 && merged[0].Source?.OriginalString == uri.OriginalString)
-            return; // already set
+        if (e.Args.Any(a => string.Equals(a, "--smoke-test", StringComparison.OrdinalIgnoreCase)))
+        {
+            var exitCode = await RunSmokeTestAsync();
+            Shutdown(exitCode);
+            return;
+        }
 
-        var dict = new ResourceDictionary { Source = uri };
-        merged[0] = dict; // replace color theme, keep Shared.xaml at index 1
+        var main = new MainWindow();
+        MainWindow = main;
+        main.Show();
+    }
+
+    private static async Task<int> RunSmokeTestAsync()
+    {
+        try
+        {
+            var webUi = Path.Combine(AppContext.BaseDirectory, "WebUI", "index.html");
+            if (!File.Exists(webUi))
+                return 2;
+            if (!File.Exists(ExifToolService.DefaultPath))
+                return 3;
+
+            await using var exifTool = new ExifToolService(ExifToolService.DefaultPath);
+            await exifTool.WarmUpAsync();
+            return exifTool.IsDaemonRunning ? 0 : 4;
+        }
+        catch
+        {
+            return 5;
+        }
     }
 }
