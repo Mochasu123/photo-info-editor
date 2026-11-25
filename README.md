@@ -31,7 +31,7 @@
 ## 运行与打包
 
 - **编译与测试**：`dotnet test PhotoLocationEditor.sln -c Release`
-- **自包含发布**：`dotnet publish src\PhotoLocationEditor.App\PhotoLocationEditor.App.Modern.csproj -c Release -r win-x64 --self-contained true -o dist\publish`
+- **自包含发布**：`dotnet publish src\PhotoLocationEditor.App\PhotoLocationEditor.App.csproj -c Release -r win-x64 --self-contained true -o dist\publish`
 - **无界面冒烟自检**：`PhotoInfoEditor.exe --smoke-test`
 
 ---

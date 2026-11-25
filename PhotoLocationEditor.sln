@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CDAEFF8D-7B8A-464B-80CA-16C309356D66}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoLocationEditor.App", "src\PhotoLocationEditor.App\PhotoLocationEditor.App.Modern.csproj", "{EB59C28C-421B-4017-9B0E-F8F4E26989A0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoLocationEditor.App", "src\PhotoLocationEditor.App\PhotoLocationEditor.App.csproj", "{EB59C28C-421B-4017-9B0E-F8F4E26989A0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoLocationEditor.App.Tests", "tests\PhotoLocationEditor.App.Tests\PhotoLocationEditor.App.Tests.csproj", "{A6E43F0D-3D63-4C47-9D8C-1B8E5F3C9D12}"
 EndProject

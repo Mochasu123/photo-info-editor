@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\PhotoLocationEditor.App\PhotoLocationEditor.App.Modern.csproj" />
+    <ProjectReference Include="..\..\src\PhotoLocationEditor.App\PhotoLocationEditor.App.csproj" />
   </ItemGroup>
 
 </Project>

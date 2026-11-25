@@ -16,3 +16,4 @@ installer/Output/
 *.zip
 src/PhotoLocationEditor.App/bin/
 src/PhotoLocationEditor.App/obj/
+TestResults/

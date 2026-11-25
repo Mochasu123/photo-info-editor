@@ -14,7 +14,7 @@ dotnet test .\tests\PhotoLocationEditor.App.Tests\PhotoLocationEditor.App.Tests.
 
 Write-Host '==> dotnet publish (self-contained Release)'
 if (Test-Path .\dist\publish) { Remove-Item .\dist\publish -Recurse -Force }
-dotnet publish .\src\PhotoLocationEditor.App\PhotoLocationEditor.App.Modern.csproj `
+dotnet publish .\src\PhotoLocationEditor.App\PhotoLocationEditor.App.csproj `
     -c Release -r win-x64 --self-contained true `
     -o .\dist\publish
 
